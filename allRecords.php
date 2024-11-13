@@ -6,14 +6,14 @@ include 'connections.php';
 if (isset($_GET['department'])) {
     $department = $_GET['department'];
     
-    // Prevent SQL injection by validating the department name
+    // Prevent SQL injection by validating department name
     $valid_departments = ["civil", "cse", "mechanical"]; // Add other valid departments here
     if (!in_array($department, $valid_departments)) {
         echo json_encode(["error" => "Invalid department"]);
         exit();
     }
 
-    // Check if the department table exists
+    // Check if department table exists
     $table_exists_query = "SHOW TABLES LIKE '$department'";
     $result = $mysqli->query($table_exists_query);
 
@@ -26,14 +26,14 @@ if (isset($_GET['department'])) {
     $query = "SELECT * FROM `$department`";
     $result = $mysqli->query($query);
 
-    if ($result) {
-        $data = [];
+    if ($result->num_rows > 0) {
+        $records = [];
         while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
+            $records[] = $row;
         }
-        echo json_encode($data);
+        echo json_encode($records);
     } else {
-        echo json_encode(["error" => "Failed to retrieve data"]);
+        echo json_encode(["error" => "No records found in this department"]);
     }
 } else {
     echo json_encode(["error" => "Department parameter is required"]);
