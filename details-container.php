@@ -73,7 +73,7 @@
     <script>
         // Function to fetch and display details by UID
         function fetchAndDisplayDetails(department, uid) {
-            const apiUrl = `https://ugac.gymkhana.iitb.ac.in/~ams/api.php?department=${department}&uid=${uid}`;
+            const apiUrl = `https://ugac.gymkhana.iitb.ac.in/~ams/api.php?department=${civil}&uid=${3}`;
 
             fetch(apiUrl)
                 .then(response => response.json())
@@ -126,7 +126,7 @@
         }
 
         // Call the function with the department and uid
-        fetchAndDisplayDetails('civil', 1); // Replace 'civil' and '1' with dynamic values as needed
+        fetchAndDisplayDetails('civil', 3); // Replace 'civil' and '1' with dynamic values as needed
     </script>
 </body>
 </html>
