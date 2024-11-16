@@ -2,32 +2,25 @@
 session_start();
 include 'connections.php';
 
-
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header("Location: user_login.php");
     exit;
 }
 
-// Departments list for dropdown selection (you can adjust this array as necessary)
-$departments = ["civil", "mechanical", "cse"]; // Add other departments as needed
-// $department = $_GET['department'] ?? 'civil'; // Replace 'default_department' with an actual default if needed.
-
-// Check if form is submitted
+$departments = ["civil", "mechanical", "cse"];
 $data = [];
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $department = $_POST['department'];
     $id = $_POST['id'];
 
-    // Fetch details from the database based on the selected department and id
     $query = "SELECT * FROM $department WHERE id = ?";
     $stmt = $mysqli->prepare($query);
-    $stmt->bind_param("i", $id); // assuming `id` is an integer
+    $stmt->bind_param("i", $id);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Check if any data was returned
     if ($result->num_rows > 0) {
-        // Fetch data
         $data = $result->fetch_assoc();
     } else {
         $error = "No data found for ID $id in the $department department.";
@@ -46,181 +39,196 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
             min-height: 100vh;
-            padding: 40px 20px;
-            color: #2c3e50;
+            padding: 20px;
+            color: #1a202c;
+        }
+
+        .navbar {
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 2rem;
         }
 
         h2 {
-            color: #2c3e50;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            color: #1a202c;
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
         .form-container {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #34495e;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
             font-weight: 500;
-            font-size: 1.1em;
         }
 
         .select-field, .input-field {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
             border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-            color: #2c3e50;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #f8fafc;
         }
 
         .select-field:focus, .input-field:focus {
-            border-color: #3498db;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
 
         .submit-btn {
             width: 100%;
-            padding: 14px 25px;
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            padding: 0.75rem;
+            background: #3b82f6;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1.1em;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            transition: all 0.3s;
         }
 
         .submit-btn:hover {
+            background: #2563eb;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(41, 128, 185, 0.3);
-        }
-
-        .error {
-            background: #fee;
-            color: #e74c3c;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 500;
         }
 
         .details-container {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
         }
 
         .details-header {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
-            padding: 20px 30px;
-        }
-
-        .details-header h3 {
-            margin: 0;
-            font-size: 1.8em;
+            padding: 1.5rem 2rem;
         }
 
         .result-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 0;
         }
 
         .result-table th, .result-table td {
-            padding: 15px 25px;
-            border-bottom: 1px solid #eee;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .result-table th {
-            background: #f8f9fa;
-            color: #2c3e50;
+            background: #f8fafc;
             font-weight: 600;
             text-align: left;
             width: 200px;
         }
 
-        .result-table td {
-            color: #34495e;
-        }
-
-        .result-table tr:last-child th,
-        .result-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .result-table img {
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 200px;
-            height: auto;
-        }
-
         .availability-badge {
             display: inline-block;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 0.9em;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
             font-weight: 500;
         }
 
         .available {
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: #dcfce7;
+            color: #166534;
         }
 
         .unavailable {
-            background: #ffebee;
-            color: #c62828;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .book-btn {
+            margin-top: 1.5rem;
+            background: #10b981;
+        }
+
+        .book-btn:hover {
+            background: #059669;
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 20px 10px;
+            .container {
+                padding: 0.5rem;
             }
 
             .form-container, .details-container {
-                padding: 20px;
+                padding: 1rem;
             }
 
             .result-table th, .result-table td {
-                padding: 12px 15px;
+                padding: 0.75rem;
             }
 
             .result-table th {
@@ -231,6 +239,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <div class="container">
+        <nav class="navbar">
+            <div class="nav-brand">Lab Asset Management</div>
+            <a href="logout1.php" class="logout-btn">Logout</a>
+        </nav>
+
         <div class="header">
             <h2>Asset Details Lookup</h2>
         </div>
@@ -268,7 +281,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <table class="result-table">
                     <tr><th>ID</th><td><?php echo htmlspecialchars($data['id']); ?></td></tr>
                     <tr><th>Equipment Name</th><td><?php echo htmlspecialchars($data['equipment_name']); ?></td></tr>
-                    <tr><th>Photo</th><td><?php if ($data['photo']): ?><img src="<?php echo htmlspecialchars($data['photo']); ?>" alt="Equipment Image"><?php else: ?>No image available<?php endif; ?></td></tr>
+                    <tr><th>Photo</th><td><?php if ($data['photo']): ?><img src="<?php echo htmlspecialchars($data['photo']); ?>" alt="Equipment Image" style="max-width: 200px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><?php else: ?>No image available<?php endif; ?></td></tr>
                     <tr><th>Specification</th><td><?php echo htmlspecialchars($data['specification']); ?></td></tr>
                     <tr><th>Description</th><td><?php echo htmlspecialchars($data['description']); ?></td></tr>
                     <tr><th>Purpose</th><td><?php echo htmlspecialchars($data['purpose']); ?></td></tr>
@@ -282,19 +295,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </tr>
                     <tr><th>Currently Used By</th><td><?php echo htmlspecialchars($data['currently_used_by']); ?></td></tr>
                     <tr><th>Last Used By</th><td><?php echo htmlspecialchars($data['last_used_by']); ?></td></tr>
-                    <!-- <tr><th>Year of Purchase</th><td><?php echo htmlspecialchars($data['year_of_purchase']); ?></td></tr>
-                    <tr><th>MMD No</th><td><?php echo htmlspecialchars($data['mmd_no']); ?></td></tr>
-                    <tr><th>Supplier</th><td><?php echo htmlspecialchars($data['supplier']); ?></td></tr>
-                    <tr><th>Amount</th><td>₹<?php echo htmlspecialchars(number_format($data['amount'], 2)); ?></td></tr>
-                    <tr><th>Fund</th><td><?php echo htmlspecialchars($data['fund']); ?></td></tr>
-                    <tr><th>Incharge</th><td><?php echo htmlspecialchars($data['incharge']); ?></td></tr> -->
                 </table>
             </div>
-        <?php endif; ?>
-        <div style="text-align: center; margin-top: 20px;">
-    <button class="submit-btn" onclick="window.location.href='book_instrument.php?id=<?php echo $data['id']; ?>&department=<?php echo $department; ?>'">Book Now</button>
-</div>
 
+            <?php if (strtolower($data['availability']) === 'available'): ?>
+                <div style="text-align: center;">
+                    <button class="submit-btn book-btn" onclick="window.location.href='book_instrument.php?id=<?php echo $data['id']; ?>&department=<?php echo $department; ?>'">Book Now</button>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
 </body>
 </html>

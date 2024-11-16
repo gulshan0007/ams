@@ -8,12 +8,13 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['department'])) {
 }
 
 $department = $_SESSION['department'];
+
+// Create department table if it doesn't exist
 $table_exists_query = "SHOW TABLES LIKE '$department'";
 $result = $mysqli->query($table_exists_query);
 
 if ($result->num_rows == 0) {
-    // Create table if it doesn't exist
-    $create_table_query = "CREATE TABLE `$department` (
+    $create_table_query = "CREATE TABLE $department (
         id INT AUTO_INCREMENT PRIMARY KEY,
         equipment_name VARCHAR(255) NOT NULL,
         photo VARCHAR(255),
@@ -21,7 +22,7 @@ if ($result->num_rows == 0) {
         description TEXT,
         purpose TEXT,
         users TEXT,
-        availability VARCHAR(50),
+        availability VARCHAR(50) DEFAULT 'Available',
         currently_used_by VARCHAR(50),
         last_used_by VARCHAR(50),
         year_of_purchase VARCHAR(50),
@@ -34,37 +35,159 @@ if ($result->num_rows == 0) {
     $mysqli->query($create_table_query);
 }
 
+// Create bookings table if it doesn't exist
+$booking_table_query = "SHOW TABLES LIKE 'bookings'";
+$booking_result = $mysqli->query($booking_table_query);
+
+if ($booking_result->num_rows == 0) {
+    $create_booking_table = "CREATE TABLE bookings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        instrument_id INT,
+        username VARCHAR(255),
+        start_datetime DATETIME,
+        end_datetime DATETIME,
+        department VARCHAR(255),
+        FOREIGN KEY (instrument_id) REFERENCES $department(id)
+    )";
+    $mysqli->query($create_booking_table);
+}
+
 // Image upload directory
 $upload_dir = 'uploads/';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['add'])) {
-        $equipment_name = $_POST['equipment_name'];
-        $photo = null;
+        // Retrieve POST values
+        $equipment_name = $_POST['equipment_name'] ?? '';
+        $specification = $_POST['specification'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $purpose = $_POST['purpose'] ?? '';
+        $users = $_POST['users'] ?? '';
+        $year_of_purchase = $_POST['year_of_purchase'] ?? '';
+        $mmd_no = intval($_POST['mmd_no'] ?? 0);
+        $supplier = $_POST['supplier'] ?? '';
+        $amount = floatval($_POST['amount'] ?? 0);
+        $fund = $_POST['fund'] ?? '';
+        $incharge = $_POST['incharge'] ?? '';
+        $photo = '';
+        
+        // Default values
+        $availability = 'Available';
+        $currently_used_by = null;
+        $last_used_by = null;
 
-        // Handle file upload if a file was submitted
+        // Handle file upload
         if (!empty($_FILES['photo']['name'])) {
             $photo = $upload_dir . basename($_FILES['photo']['name']);
             move_uploaded_file($_FILES['photo']['tmp_name'], $photo);
         }
 
-        $stmt = $mysqli->prepare("INSERT INTO `$department` (equipment_name, photo, specification, description, purpose, users, availability, currently_used_by, last_used_by, year_of_purchase, mmd_no, supplier, amount, fund, incharge) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssssssissss",
-            $equipment_name, $photo, $_POST['specification'], $_POST['description'], $_POST['purpose'], $_POST['users'],
-            $_POST['availability'], $_POST['currently_used_by'], $_POST['last_used_by'], $_POST['year_of_purchase'], $_POST['mmd_no'],
-            $_POST['supplier'], $_POST['amount'], $_POST['fund'], $_POST['incharge']);
-        $stmt->execute();
+        // Insert into database
+        $query = "INSERT INTO $department 
+            (equipment_name, photo, specification, description, purpose, users, 
+            availability, currently_used_by, last_used_by,
+            year_of_purchase, mmd_no, supplier, amount, fund, incharge) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+        if ($stmt = $mysqli->prepare($query)) {
+            $stmt->bind_param(
+                "ssssssssssissss",
+                $equipment_name,
+                $photo,
+                $specification,
+                $description,
+                $purpose,
+                $users,
+                $availability,
+                $currently_used_by,
+                $last_used_by,
+                $year_of_purchase,
+                $mmd_no,
+                $supplier,
+                $amount,
+                $fund,
+                $incharge
+            );
+
+            if ($stmt->execute()) {
+                echo "Record added successfully!";
+            } else {
+                echo "Error: " . $stmt->error;
+            }
+            $stmt->close();
+        } else {
+            echo "Error in preparing statement: " . $mysqli->error;
+        }
+        
     } elseif (isset($_POST['delete_id'])) {
-        $stmt = $mysqli->prepare("DELETE FROM `$department` WHERE id = ?");
+        // Delete record
+        $stmt = $mysqli->prepare("DELETE FROM $department WHERE id = ?");
         $stmt->bind_param("i", $_POST['delete_id']);
         $stmt->execute();
+        $stmt->close();
+
+        if ($mysqli->affected_rows > 0) {
+            echo "Record deleted successfully!";
+        } else {
+            echo "No record found with that ID.";
+        }
     }
 }
 
-$query = "SELECT * FROM `$department`";
+// Function to update equipment status
+function updateEquipmentStatus($department, $mysqli) {
+    $query = "SELECT * FROM $department";
+    $result = $mysqli->query($query);
+
+    while ($row = $result->fetch_assoc()) {
+        $equipment_id = $row['id'];
+        $current_time = date("Y-m-d H:i:s");
+
+        // Check for bookings
+        $booking_query = "SELECT * FROM bookings WHERE instrument_id = ? AND department = ? 
+                         ORDER BY end_datetime DESC LIMIT 1";
+        $stmt = $mysqli->prepare($booking_query);
+        $stmt->bind_param("is", $equipment_id, $department);
+        $stmt->execute();
+        $booking_result = $stmt->get_result();
+
+        $availability = "Available";
+        $currently_used_by = null;
+        $last_used_by = $row['last_used_by'];
+
+        if ($booking = $booking_result->fetch_assoc()) {
+            if ($current_time >= $booking['start_datetime'] && $current_time <= $booking['end_datetime']) {
+                $availability = "Not Available";
+                $currently_used_by = $booking['username'];
+            } elseif ($current_time > $booking['end_datetime'] && $booking['username'] != $last_used_by) {
+                $last_used_by = $booking['username'];
+            }
+        }
+
+        // Update equipment status
+        $update_query = "UPDATE $department SET 
+                        availability = ?, 
+                        currently_used_by = ?, 
+                        last_used_by = ? 
+                        WHERE id = ?";
+        $stmt_update = $mysqli->prepare($update_query);
+        $stmt_update->bind_param("sssi", $availability, $currently_used_by, $last_used_by, $equipment_id);
+        $stmt_update->execute();
+        $stmt_update->close();
+    }
+}
+
+// Update equipment status
+updateEquipmentStatus($department, $mysqli);
+
+// Fetch all equipment data
+$query = "SELECT * FROM $department";
 $result = $mysqli->query($query);
+
 ?>
+
+
 
 <!DOCTYPE html>
 <html>
@@ -349,18 +472,18 @@ $result = $mysqli->query($query);
                         <label>Users</label>
                         <input type="text" name="users">
                     </div>
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label>Availability</label>
                         <input type="text" name="availability">
-                    </div>
-                    <div class="form-group">
+                    </div> -->
+                    <!-- <div class="form-group">
                         <label>Currently Used By</label>
                         <input type="text" name="currently_used_by">
                     </div>
                     <div class="form-group">
                         <label>Last Used By</label>
                         <input type="text" name="last_used_by">
-                    </div>
+                    </div> -->
                     <div class="form-group">
                         <label>Year of Purchase</label>
                         <input type="text" name="year_of_purchase">
