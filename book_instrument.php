@@ -14,6 +14,22 @@ $department = $_GET['department'] ?? '';
 $username = $_SESSION['username'];
 $current_time = date("Y-m-d H:i:s");
 
+// Check and update availability based on end_datetime
+$update_availability_query = "
+    UPDATE `$department` i
+    SET i.availability = 'Available', 
+        i.currently_used_by = NULL
+    WHERE i.id = ? AND NOT EXISTS (
+        SELECT 1 
+        FROM bookings b
+        WHERE b.instrument_id = i.id 
+        AND b.department = ?
+        AND b.end_datetime > ?
+    )";
+$update_stmt = $mysqli->prepare($update_availability_query);
+$update_stmt->bind_param("iss", $instrument_id, $department, $current_time);
+$update_stmt->execute();
+
 // First, check if there are any active bookings and update instrument status
 $check_bookings_query = "SELECT b.*, i.currently_used_by, i.last_used_by 
                         FROM bookings b
@@ -77,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                      AND ((start_datetime <= ? AND end_datetime >= ?) 
                      OR (start_datetime <= ? AND end_datetime >= ?)
                      OR (start_datetime >= ? AND end_datetime <= ?))";
-    
+
     $stmt = $mysqli->prepare($overlap_query);
     $stmt->bind_param("isssssss", 
         $instrument_id, 
@@ -115,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                    last_used_by = ?
                                WHERE id = ?";
             $new_status_stmt = $mysqli->prepare($new_status_query);
-            $new_status_stmt->bind_param("ssi", $username, $currently_used_by, $instrument_id);
+            $new_status_stmt->bind_param("ssi", $username, $username, $instrument_id);
             $new_status_stmt->execute();
         } else {
             $new_status_query = "UPDATE `$department` 
@@ -127,7 +143,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         $mysqli->commit();
-        echo "<script>alert('Booking confirmed!'); window.close();</script>";
+        // updateEquipmentStatus($department, $mysqli);
+        echo "<script>
+    alert('Booking confirmed!');
+    window.location.href = 'view_details.php';
+</script>";
         exit();
     } catch (Exception $e) {
         $mysqli->rollback();
@@ -135,6 +155,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

@@ -6,8 +6,21 @@ if (!isset($_SESSION['username']) || !isset($_SESSION['department'])) {
     header("Location: login.php");
     exit();
 }
-
 $department = $_SESSION['department'];
+
+// Add this at the top of your dashboard.php after session checks
+updateEquipmentStatus($department, $mysqli);
+
+// For debugging one specific equipment (replace XX with the equipment ID you want to check)
+// checkEquipmentStatus($department, $mysqli, 1);
+// checkEquipmentStatus($department, $mysqli, 10);
+
+// Force the page to not cache
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
+
 
 // Create department table if it doesn't exist
 $table_exists_query = "SHOW TABLES LIKE '$department'";
@@ -144,48 +157,84 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
 }
 
-// Function to update equipment status
+
+
 function updateEquipmentStatus($department, $mysqli) {
-    $query = "SELECT * FROM $department";
-    $result = $mysqli->query($query);
-
-    while ($row = $result->fetch_assoc()) {
-        $equipment_id = $row['id'];
-        $current_time = date("Y-m-d H:i:s");
-
-        // Check for bookings
-        $booking_query = "SELECT * FROM bookings WHERE instrument_id = ? AND department = ? 
-                         ORDER BY end_datetime DESC LIMIT 1";
-        $stmt = $mysqli->prepare($booking_query);
-        $stmt->bind_param("is", $equipment_id, $department);
+    $current_time = date("Y-m-d H:i:s");
+    
+    // First, get all equipment from the department
+    $equipment_query = "SELECT id FROM `$department`";
+    $equipment_result = $mysqli->query($equipment_query);
+    
+    while($equipment = $equipment_result->fetch_assoc()) {
+        $equipment_id = $equipment['id'];
+        
+        // Check if there's any current or future booking for this equipment
+        $check_booking = "SELECT COUNT(*) as active_bookings 
+                         FROM bookings 
+                         WHERE instrument_id = ? 
+                         AND department = ? 
+                         AND end_datetime > ?";
+                         
+        $stmt = $mysqli->prepare($check_booking);
+        $stmt->bind_param("iss", $equipment_id, $department, $current_time);
         $stmt->execute();
-        $booking_result = $stmt->get_result();
-
-        $availability = "Available";
-        $currently_used_by = null;
-        $last_used_by = $row['last_used_by'];
-
-        if ($booking = $booking_result->fetch_assoc()) {
-            if ($current_time >= $booking['start_datetime'] && $current_time <= $booking['end_datetime']) {
-                $availability = "Booked";
-                $currently_used_by = $booking['username'];
-            } elseif ($current_time > $booking['end_datetime'] && $booking['username'] != $last_used_by) {
-                $last_used_by = $booking['username'];
-            }
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        
+        if($row['active_bookings'] == 0) {
+            // No active or future bookings - set to Available
+            $update = "UPDATE `$department` 
+                      SET availability = 'Available',
+                          currently_used_by = NULL 
+                      WHERE id = ?";
+            $update_stmt = $mysqli->prepare($update);
+            $update_stmt->bind_param("i", $equipment_id);
+            $update_stmt->execute();
+            $update_stmt->close();
         }
-
-        // Update equipment status
-        $update_query = "UPDATE $department SET 
-                        availability = ?, 
-                        currently_used_by = ?, 
-                        last_used_by = ? 
-                        WHERE id = ?";
-        $stmt_update = $mysqli->prepare($update_query);
-        $stmt_update->bind_param("sssi", $availability, $currently_used_by, $last_used_by, $equipment_id);
-        $stmt_update->execute();
-        $stmt_update->close();
+        $stmt->close();
     }
 }
+
+// Debug function to check specific equipment status
+function checkEquipmentStatus($department, $mysqli, $equipment_id) {
+    date_default_timezone_set('Asia/Kolkata');
+    $current_time = date("Y-m-d H:i:s");
+    
+    // Get equipment details
+    $equipment_query = "SELECT * FROM `$department` WHERE id = ?";
+    $stmt = $mysqli->prepare($equipment_query);
+    $stmt->bind_param("i", $equipment_id);
+    $stmt->execute();
+    $equipment_result = $stmt->get_result();
+    $equipment = $equipment_result->fetch_assoc();
+    
+    // Get latest booking
+    $booking_query = "SELECT * FROM bookings 
+                     WHERE instrument_id = ? 
+                     AND department = ? 
+                     ORDER BY end_datetime DESC 
+                     LIMIT 1";
+    $stmt = $mysqli->prepare($booking_query);
+    $stmt->bind_param("is", $equipment_id, $department);
+    $stmt->execute();
+    $booking_result = $stmt->get_result();
+    $booking = $booking_result->fetch_assoc();
+    
+    echo "Debug Info:<br>";
+    echo "Current Time: " . $current_time . "<br>";
+    echo "Equipment Status: " . $equipment['availability'] . "<br>";
+    if($booking) {
+        echo "Latest Booking End: " . $booking['end_datetime'] . "<br>";
+    } else {
+        echo "No bookings found<br>";
+    }
+}
+
+
+
+
 
 // Update equipment status
 updateEquipmentStatus($department, $mysqli);
@@ -196,7 +245,48 @@ $result = $mysqli->query($query);
 
 ?>
 
+<!-- // Function to update equipment status
+// function updateEquipmentStatus($department, $mysqli) {
+//     $query = "SELECT * FROM $department";
+//     $result = $mysqli->query($query);
 
+//     while ($row = $result->fetch_assoc()) {
+//         $equipment_id = $row['id'];
+//         $current_time = date("Y-m-d H:i:s");
+
+//         // Check for bookings
+//         $booking_query = "SELECT * FROM bookings WHERE instrument_id = ? AND department = ? 
+//                          ORDER BY end_datetime DESC LIMIT 1";
+//         $stmt = $mysqli->prepare($booking_query);
+//         $stmt->bind_param("is", $equipment_id, $department);
+//         $stmt->execute();
+//         $booking_result = $stmt->get_result();
+
+//         $availability = "Available";
+//         $currently_used_by = null;
+//         $last_used_by = $row['last_used_by'];
+
+//         if ($booking = $booking_result->fetch_assoc()) {
+//             if ($current_time >= $booking['start_datetime'] && $current_time <= $booking['end_datetime']) {
+//                 $availability = "Booked";
+//                 $currently_used_by = $booking['username'];
+//             } elseif ($current_time > $booking['end_datetime'] && $booking['username'] != $last_used_by) {
+//                 $last_used_by = $booking['username'];
+//             }
+//         }
+
+//         // Update equipment status
+//         $update_query = "UPDATE $department SET 
+//                         availability = ?, 
+//                         currently_used_by = ?, 
+//                         last_used_by = ? 
+//                         WHERE id = ?";
+//         $stmt_update = $mysqli->prepare($update_query);
+//         $stmt_update->bind_param("sssi", $availability, $currently_used_by, $last_used_by, $equipment_id);
+//         $stmt_update->execute();
+//         $stmt_update->close();
+//     }
+// } -->
 
 <!DOCTYPE html>
 <html>
