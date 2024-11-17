@@ -298,11 +298,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </table>
             </div>
 
-            <?php if (strtolower($data['availability']) === 'available'): ?>
+            <!-- <?php if (strtolower($data['availability']) === 'available'): ?>
                 <div style="text-align: center;">
                     <button class="submit-btn book-btn" onclick="window.location.href='book_instrument.php?id=<?php echo $data['id']; ?>&department=<?php echo $department; ?>'">Book Now</button>
                 </div>
-            <?php endif; ?>
+            <?php endif; ?> -->
+            <div style="text-align: center;">
+                    <button class="submit-btn book-btn" onclick="window.location.href='book_instrument.php?id=<?php echo $data['id']; ?>&department=<?php echo $department; ?>'">Book Now</button>
+                </div>
         <?php endif; ?>
     </div>
 </body>

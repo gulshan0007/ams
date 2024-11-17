@@ -121,18 +121,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
     } elseif (isset($_POST['delete_id'])) {
-        // Delete record
-        $stmt = $mysqli->prepare("DELETE FROM $department WHERE id = ?");
-        $stmt->bind_param("i", $_POST['delete_id']);
+        $delete_id = $_POST['delete_id'];
+    
+        // Delete related bookings
+        $stmt = $mysqli->prepare("DELETE FROM bookings WHERE instrument_id = ?");
+        $stmt->bind_param("i", $delete_id);
         $stmt->execute();
         $stmt->close();
-
-        if ($mysqli->affected_rows > 0) {
-            echo "Record deleted successfully!";
-        } else {
-            echo "No record found with that ID.";
-        }
+    
+        // Delete the equipment record
+        $stmt = $mysqli->prepare("DELETE FROM $department WHERE id = ?");
+        $stmt->bind_param("i", $delete_id);
+        $stmt->execute();
+        $stmt->close();
+    
+        // if ($mysqli->affected_rows > 0) {
+        //     echo "Record deleted successfully!";
+        // } else {
+        //     echo "No record found with that ID.";
+        // }
     }
+    
 }
 
 // Function to update equipment status
@@ -158,7 +167,7 @@ function updateEquipmentStatus($department, $mysqli) {
 
         if ($booking = $booking_result->fetch_assoc()) {
             if ($current_time >= $booking['start_datetime'] && $current_time <= $booking['end_datetime']) {
-                $availability = "Not Available";
+                $availability = "Booked";
                 $currently_used_by = $booking['username'];
             } elseif ($current_time > $booking['end_datetime'] && $booking['username'] != $last_used_by) {
                 $last_used_by = $booking['username'];
@@ -341,6 +350,15 @@ $result = $mysqli->query($query);
             background: #ff6b81;
         }
 
+        .btn-edit {
+            background: green;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: green;
+        }
+
         .btn-add {
             background: #2a5298;
             color: white;
@@ -434,11 +452,17 @@ $result = $mysqli->query($query);
                         </span>
                     </td>
                     <td>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
-                            <button type="submit" class="btn btn-delete">Delete</button>
-                        </form>
-                    </td>
+    <form method="POST" style="display:inline;">
+        <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
+        <button type="submit" class="btn btn-delete">Delete</button>
+    </form>
+    <form action="update.php" method="GET" style="display:inline;">
+        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+        <button type="submit" class="btn btn-edit">Edit</button>
+    </form>
+</td>
+                  
+
                 </tr>
             <?php endwhile; ?>
         </table>

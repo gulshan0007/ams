@@ -36,7 +36,7 @@ while ($booking = $bookings_result->fetch_assoc()) {
     if (strtotime($current_time) >= strtotime($booking['start_datetime']) && 
         strtotime($current_time) <= strtotime($booking['end_datetime'])) {
         // Current time is within a booking period
-        $availability = 'Not Available';
+        $availability = 'Booked';
         $currently_used_by = $booking['username'];
         if ($booking['currently_used_by'] !== null) {
             $last_used_by = $booking['currently_used_by'];
@@ -110,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Update instrument status if booking starts immediately
         if (strtotime($start_datetime) <= strtotime($current_time)) {
             $new_status_query = "UPDATE `$department` 
-                               SET availability = 'Not Available',
+                               SET availability = 'Booked',
                                    currently_used_by = ?,
                                    last_used_by = ?
                                WHERE id = ?";
