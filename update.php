@@ -35,6 +35,7 @@ $stmt->close();
 // Handle form submission for updating equipment details
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $equipment_name = $_POST['equipment_name'] ?? $equipment['equipment_name'];
+    $equipment_dept = $_POST['equipment_dept'] ?? $equipment['equipment_dept'];
     $specification = $_POST['specification'] ?? $equipment['specification'];
     $description = $_POST['description'] ?? $equipment['description'];
     $purpose = $_POST['purpose'] ?? $equipment['purpose'];
@@ -56,14 +57,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Update query
     $update_query = "UPDATE $department SET 
-        equipment_name = ?, photo = ?, specification = ?, description = ?, purpose = ?, 
+        equipment_name = ?, equipment_dept = ?, photo = ?, specification = ?, description = ?, purpose = ?, 
         users = ?, year_of_purchase = ?, mmd_no = ?, supplier = ?, amount = ?, 
         fund = ?, incharge = ? WHERE id = ?";
 
     if ($stmt = $mysqli->prepare($update_query)) {
         $stmt->bind_param(
-            "sssssssisdsii",
+            "ssssssssisdsii",
             $equipment_name,
+            $equipment_dept,
             $photo,
             $specification,
             $description,
@@ -157,6 +159,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="form-group">
                             <label>Equipment Name</label>
                             <input type="text" name="equipment_name" value="<?php echo htmlspecialchars($equipment['equipment_name']); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Equipment Department</label>
+                            <input type="text" name="equipment_dept" value="<?php echo htmlspecialchars($equipment['equipment_dept']); ?>" required>
                         </div>
 
                         <div class="form-group">

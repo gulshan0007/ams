@@ -30,6 +30,7 @@ if ($result->num_rows == 0) {
     $create_table_query = "CREATE TABLE $department (
         id INT AUTO_INCREMENT PRIMARY KEY,
         equipment_name VARCHAR(255) NOT NULL,
+        equipment_dept VARCHAR(255) NOT NULL,
         photo VARCHAR(255),
         specification TEXT,
         description TEXT,
@@ -73,6 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['add'])) {
         // Retrieve POST values
         $equipment_name = $_POST['equipment_name'] ?? '';
+        $equipment_dept = $_POST['equipment_dept'] ?? '';
         $specification = $_POST['specification'] ?? '';
         $description = $_POST['description'] ?? '';
         $purpose = $_POST['purpose'] ?? '';
@@ -98,15 +100,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Insert into database
         $query = "INSERT INTO $department 
-            (equipment_name, photo, specification, description, purpose, users, 
+            (equipment_name, equipment_dept, photo, specification, description, purpose, users, 
             availability, currently_used_by, last_used_by,
             year_of_purchase, mmd_no, supplier, amount, fund, incharge) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
         if ($stmt = $mysqli->prepare($query)) {
             $stmt->bind_param(
-                "ssssssssssissss",
+                "sssssssssssissss",
                 $equipment_name,
+                $equipment_dept,
                 $photo,
                 $specification,
                 $description,
@@ -514,48 +517,67 @@ $result = $mysqli->query($query);
             <tr>
                 <th>ID</th>
                 <th>Equipment Name</th>
+                <th>Department</th>
                 <th>Photo</th>
                 <th>Specification</th>
                 <th>Description</th>
                 <th>Purpose</th>
                 <th>Users</th>
-                <th>Availability</th>
+                <th>Status</th>
+                <th>Booked Till</th>
                 <th>Actions</th>
             </tr>
             <?php while ($row = $result->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo $row['id']; ?></td>
-                    <td><?php echo $row['equipment_name']; ?></td>
-                    <td>
-                        <?php if ($row['photo']): ?>
-                            <img src="<?php echo $row['photo']; ?>" alt="Equipment Photo" width="100">
-                        <?php else: ?>
-                            No photo
-                        <?php endif; ?>
-                    </td>
-                    <td><?php echo $row['specification']; ?></td>
-                    <td><?php echo $row['description']; ?></td>
-                    <td><?php echo $row['purpose']; ?></td>
-                    <td><?php echo $row['users']; ?></td>
-                    <td>
-                        <span class="status-badge <?php echo strtolower($row['availability']) === 'available' ? 'status-available' : 'status-unavailable'; ?>">
-                            <?php echo $row['availability']; ?>
-                        </span>
-                    </td>
-                    <td>
-    <form method="POST" style="display:inline;">
-        <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
-        <button type="submit" class="btn btn-delete">Delete</button>
-    </form>
-    <form action="update.php" method="GET" style="display:inline;">
-        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-        <button type="submit" class="btn btn-edit">Edit</button>
-    </form>
-</td>
-                  
+    <tr>
+        <td><?php echo $row['id']; ?></td>
+        <td><?php echo $row['equipment_name']; ?></td>
+        <td><?php echo $row['equipment_dept']; ?></td>
+        <td>
+            <?php if ($row['photo']): ?>
+                <img src="<?php echo $row['photo']; ?>" alt="Equipment Photo" width="100">
+            <?php else: ?>
+                No photo
+            <?php endif; ?>
+        </td>
+        <td><?php echo $row['specification']; ?></td>
+        <td><?php echo $row['description']; ?></td>
+        <td><?php echo $row['purpose']; ?></td>
+        <td><?php echo $row['users']; ?></td>
+        <td>
+            <span class="status-badge <?php echo strtolower($row['availability']) === 'available' ? 'status-available' : 'status-unavailable'; ?>">
+                <?php echo $row['availability']; ?>
+            </span>
+        </td>
+        <td>
+            <?php
+            // Fetch the farthest end_datetime for this instrument from the bookings table
+            $booked_query = "SELECT MAX(end_datetime) AS booked_till FROM bookings WHERE instrument_id = ? AND department = ?";
+            $booked_stmt = $mysqli->prepare($booked_query);
+            $booked_stmt->bind_param("is", $row['id'], $department);
+            $booked_stmt->execute();
+            $booked_result = $booked_stmt->get_result();
+            $booked_row = $booked_result->fetch_assoc();
 
-                </tr>
-            <?php endwhile; ?>
+            if ($booked_row['booked_till']) {
+                echo $booked_row['booked_till']; // Display the farthest date and time
+            } else {
+                echo 'N/A'; // If no bookings exist
+            }
+            ?>
+        </td>
+        <td>
+            <form method="POST" style="display:inline;">
+                <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
+                <button type="submit" class="btn btn-delete">Delete</button>
+            </form>
+            <form action="update.php" method="GET" style="display:inline;">
+                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                <button type="submit" class="btn btn-edit">Edit</button>
+            </form>
+        </td>
+    </tr>
+<?php endwhile; ?>
+
         </table>
 
         <!-- Form to add new equipment -->
@@ -566,6 +588,10 @@ $result = $mysqli->query($query);
                     <div class="form-group">
                         <label>Equipment Name</label>
                         <input type="text" name="equipment_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipment Department</label>
+                        <input type="text" name="equipment_dept" required>
                     </div>
                     <div class="form-group">
                         <label>Photo</label>
