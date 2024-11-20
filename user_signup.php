@@ -1,15 +1,143 @@
+<?php
+include 'connections.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'vendor/autoload.php';
+if (isset($_GET['check_username'])) {
+    $username = $_GET['username'];
+    
+    $stmt = $mysqli->prepare("SELECT COUNT(*) FROM userdetails WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+    
+    echo json_encode(['exists' => $count > 0]);
+    exit();
+}
+
+session_start();
+
+function generateOTP($length = 6) {
+    return str_pad(rand(0, pow(10, $length)-1), $length, '0', STR_PAD_LEFT);
+}
+
+function sendOTPEmail($email, $otp) {
+    $mail = new PHPMailer(true);
+
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'gulshankumar060102@gmail.com';
+        $mail->Password   = 'bmmz zjnm zbnk kyrb'; // Use App Password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+
+        $mail->setFrom('gulshan.iitb@gmail.com', 'Lab Assets Registration');
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Your OTP for Lab Assets Registration';
+        $mail->Body    = "Your OTP is: <b>$otp</b>";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Email sending failed: " . $e->getMessage());
+        return false;
+    }
+}
+
+$error_message = '';
+
+// Step 1: Initial Registration Request
+if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_SESSION['otp_verified'])) {
+    // Use isset() to prevent undefined index warnings
+    $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+    $department = isset($_POST['department']) ? trim($_POST['department']) : '';
+
+    // Validate inputs
+    if (empty($username) || empty($password) || empty($department)) {
+        $error_message = "All fields are required.";
+    } else {
+        $email = $username . '@iitb.ac.in';
+
+        // Generate and send OTP
+        $otp = generateOTP();
+        
+        // Store registration details in session
+        $_SESSION['reg_username'] = $username;
+        $_SESSION['reg_email'] = $email;
+        $_SESSION['reg_password'] = password_hash($password, PASSWORD_DEFAULT);
+        $_SESSION['reg_department'] = $department;
+        $_SESSION['generated_otp'] = $otp;
+
+        // Send OTP via email
+        if (sendOTPEmail($email, $otp)) {
+            $_SESSION['otp_sent'] = true;
+        } else {
+            $error_message = "Failed to send OTP. Please contact IT support.";
+        }
+    }
+}
+
+// Step 2: OTP Verification
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['otp_sent']) && !isset($_SESSION['otp_verified'])) {
+    $user_otp = isset($_POST['otp']) ? trim($_POST['otp']) : '';
+
+    if (empty($user_otp)) {
+        $error_message = "Please enter the OTP.";
+    } elseif ($user_otp == $_SESSION['generated_otp']) {
+        // OTP Verified - Complete Registration
+        $username = $_SESSION['reg_username'];
+        $email = $_SESSION['reg_email'];
+        $hashedPassword = $_SESSION['reg_password'];
+        $department = $_SESSION['reg_department'];
+
+        // Insert user data into userdetails
+        $query = "INSERT INTO userdetails (username, password, department) VALUES (?, ?, ?)";
+        $stmt = $mysqli->prepare($query);
+        $stmt->bind_param("sss", $username, $hashedPassword, $department);
+
+        if ($stmt->execute()) {
+            // Clear session data
+            session_unset();
+            session_destroy();
+
+            // Redirect to login page
+            header("Location: user_login.php");
+            exit();
+        } else {
+            $error_message = "Error: Could not register user.";
+        }
+    } else {
+        $error_message = "Invalid OTP. Please try again.";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
+    <title>Create Account</title>
     <style>
+        /* Previous CSS remains the same */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .username-error {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 5px;
         }
 
         body {
@@ -120,60 +248,86 @@
             }
         }
     </style>
+     <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const usernameInput = document.getElementById('username');
+        const usernameError = document.createElement('div');
+        usernameError.classList.add('username-error');
+        usernameInput.parentNode.appendChild(usernameError);
+
+        usernameInput.addEventListener('input', function() {
+            const username = this.value;
+            
+            if (username.length > 0) {
+                fetch(`user_signup.php?check_username=1&username=${username}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            usernameError.textContent = 'Username already exists. Please choose another.';
+                            this.setCustomValidity('Username exists');
+                        } else {
+                            usernameError.textContent = '';
+                            this.setCustomValidity('');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                usernameError.textContent = '';
+                this.setCustomValidity('');
+            }
+        });
+    });
+    </script>
 </head>
 <body>
-    <?php
-    include 'connections.php';
-
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-        $department = $_POST['department'];
-
-        // Insert user data into userdetails
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $query = "INSERT INTO userdetails (username, password, department) VALUES (?, ?, ?)";
-        $stmt = $mysqli->prepare($query);
-        $stmt->bind_param("sss", $username, $hashedPassword, $department);
-
-        if ($stmt->execute()) {
-            header("Location: user_login.php");
-            exit();
-        } else {
-            $error_message = "Error: Could not register user.";
-        }
-    }
-    ?>
-
     <div class="container">
         <div class="header">
             <h1>Create Account</h1>
-            <p>Please fill in your information to sign up</p>
+            <p>
+                <?php 
+                if (!isset($_SESSION['otp_sent'])) {
+                    echo "Please fill in your information to sign up";
+                } else {
+                    echo "Enter the OTP sent to your @iitb.ac.in email";
+                }
+                ?>
+            </p>
         </div>
 
-        <?php if (isset($error_message)): ?>
+        <?php if (!empty($error_message)): ?>
             <div class="error-message">
                 <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php endif; ?>
 
         <form method="POST">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
-            </div>
+            <?php if (!isset($_SESSION['otp_sent'])): ?>
+                <div class="form-group">
+                    <label for="username">Username (without @iitb.ac.in)</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
 
-            <div class="form-group">
-                <label for="department">Department</label>
-                <input type="text" id="department" name="department" required>
-            </div>
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <input type="text" id="department" name="department" required>
+                </div>
 
-            <button type="submit" class="submit-btn">Create Account</button>
+                <button type="submit" class="submit-btn">Send OTP</button>
+            <?php else: ?>
+                <div class="form-group">
+                    <label for="otp">Enter OTP</label>
+                    <input type="text" id="otp" name="otp" required>
+                </div>
+
+                <button type="submit" class="submit-btn">Verify OTP</button>
+            <?php endif; ?>
         </form>
 
         <div class="login-link">
