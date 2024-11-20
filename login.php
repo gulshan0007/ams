@@ -5,7 +5,8 @@ include 'connections.php';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
-    $department = $_POST['department'];
+    // $department = $_POST['department'];
+    $department = "civil";
 
     $stmt = $mysqli->prepare("SELECT * FROM users WHERE username=? AND password=? AND department=?");
     $stmt->bind_param("sss", $username, $password, $department);
@@ -178,14 +179,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="password" name="password" required placeholder="Enter your password">
         </div>
 
-        <div class="form-group">
+        <!-- <div class="form-group">
             <label>Department:</label>
             <select name="department">
                 <option value="cse">CSE</option>
                 <option value="civil">Civil</option>
                 <option value="mechanical">Mechanical</option>
             </select>
-        </div>
+        </div> -->
 
         <button type="submit">Login</button>
     </form>

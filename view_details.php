@@ -345,12 +345,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <tr><th>Description</th><td><?php echo htmlspecialchars($data['description']); ?></td></tr>
                     <tr><th>Purpose</th><td><?php echo htmlspecialchars($data['purpose']); ?></td></tr>
                     <tr><th>Users</th><td><?php echo htmlspecialchars($data['users']); ?></td></tr>
-                    <tr><th>Availability</th>
+                    <tr><th>Status</th>
                         <td>
                             <span class="availability-badge <?php echo strtolower($data['availability']) === 'available' ? 'available' : 'unavailable'; ?>">
                                 <?php echo htmlspecialchars($data['availability']); ?>
                             </span>
                         </td>
+                    </tr>
+                    <tr><th>Booked Till</th>
+    <td>
+    <?php
+        // Ensure $data['id'] and $data['equipment_dept'] are used correctly
+        $instrument_id = $data['id'];
+        $department = "civil";;
+
+        // Fetch the farthest end_datetime for this instrument
+        $booked_query = "SELECT MAX(end_datetime) AS booked_till FROM bookings WHERE instrument_id = ? AND department = ?";
+        $booked_stmt = $mysqli->prepare($booked_query);
+        
+        // Check if preparation was successful
+        if ($booked_stmt) {
+            $booked_stmt->bind_param("is", $instrument_id, $department);
+            $booked_stmt->execute();
+            $booked_result = $booked_stmt->get_result();
+
+            if ($booked_result) {
+                $booked_row = $booked_result->fetch_assoc();
+                if ($booked_row['booked_till']) {
+                    $date = new DateTime($booked_row['booked_till']);
+                    echo $date->format('M j, Y g:i A');
+                } else {
+                    echo 'N/A'; // If no bookings exist
+                }
+            } else {
+                echo 'Error fetching bookings.';
+            }
+            $booked_stmt->close();
+        } else {
+            echo 'Query preparation failed.';
+        }
+    ?>
+    </td>
+</tr>
+
                     </tr>
                     <!-- <tr><th>Currently Used By</th><td><?php echo htmlspecialchars($data['currently_used_by']); ?></td></tr>
                     <tr><th>Last Used By</th><td><?php echo htmlspecialchars($data['last_used_by']); ?></td></tr> -->

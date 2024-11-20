@@ -1,12 +1,16 @@
 <?php
 session_start();
 include 'connections.php';
+require_once 'get_pending_count.php';
+
 
 if (!isset($_SESSION['username']) || !isset($_SESSION['department'])) {
     header("Location: login.php");
     exit();
 }
 $department = $_SESSION['department'];
+$pending_count = getPendingCount($mysqli, $department);
+
 
 // Add this at the top of your dashboard.php after session checks
 updateEquipmentStatus($department, $mysqli);
@@ -54,6 +58,15 @@ $booking_table_query = "SHOW TABLES LIKE 'bookings'";
 $booking_result = $mysqli->query($booking_table_query);
 
 if ($booking_result->num_rows == 0) {
+    // $create_booking_table = "CREATE TABLE bookings (
+    //     id INT AUTO_INCREMENT PRIMARY KEY,
+    //     instrument_id INT,
+    //     username VARCHAR(255),
+    //     start_datetime DATETIME,
+    //     end_datetime DATETIME,
+    //     department VARCHAR(255),
+    //     FOREIGN KEY (instrument_id) REFERENCES $department(id)
+    // )";
     $create_booking_table = "CREATE TABLE bookings (
         id INT AUTO_INCREMENT PRIMARY KEY,
         instrument_id INT,
@@ -61,6 +74,7 @@ if ($booking_result->num_rows == 0) {
         start_datetime DATETIME,
         end_datetime DATETIME,
         department VARCHAR(255),
+        status VARCHAR(20) DEFAULT 'pending', /* Add this line */
         FOREIGN KEY (instrument_id) REFERENCES $department(id)
     )";
     $mysqli->query($create_booking_table);
@@ -340,6 +354,44 @@ $result = $mysqli->query($query);
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .pending-link {
+    position: relative;
+    color: white;
+    text-decoration: none;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.pending-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.pending-count {
+    background: #ff4757;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    position: absolute;
+    top: -10px;
+    right: -10px;
+}
+
+.pending-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -504,11 +556,18 @@ $result = $mysqli->query($query);
 </head>
 <body>
     <div class="container">
+        
         <div class="header">
             <div class="header-info">
                 <h2>Welcome, <?php echo $_SESSION['username']; ?></h2>
                 <h3>Department: <?php echo strtoupper($_SESSION['department']); ?></h3>
             </div>
+            <a href="pending_bookings.php" class="pending-link">
+    <?php if ($pending_count > 0): ?>
+        <span class="pending-count"><?php echo $pending_count; ?></span>
+    <?php endif; ?>
+    <span class="pending-text">Pending Bookings</span>
+</a>
             <a href="logout.php" class="logout-link">Logout</a>
         </div>
 
@@ -521,8 +580,8 @@ $result = $mysqli->query($query);
                 <th>Photo</th>
                 <th>Specification</th>
                 <th>Description</th>
-                <th>Purpose</th>
-                <th>Users</th>
+                <!-- <th>Purpose</th>
+                <th>Users</th> -->
                 <th>Status</th>
                 <th>Booked Till</th>
                 <th>Actions</th>
@@ -541,8 +600,8 @@ $result = $mysqli->query($query);
         </td>
         <td><?php echo $row['specification']; ?></td>
         <td><?php echo $row['description']; ?></td>
-        <td><?php echo $row['purpose']; ?></td>
-        <td><?php echo $row['users']; ?></td>
+        <!-- <td><?php echo $row['purpose']; ?></td>
+        <td><?php echo $row['users']; ?></td> -->
         <td>
             <span class="status-badge <?php echo strtolower($row['availability']) === 'available' ? 'status-available' : 'status-unavailable'; ?>">
                 <?php echo $row['availability']; ?>
@@ -559,7 +618,8 @@ $result = $mysqli->query($query);
             $booked_row = $booked_result->fetch_assoc();
 
             if ($booked_row['booked_till']) {
-                echo $booked_row['booked_till']; // Display the farthest date and time
+                $date = new DateTime($booked_row['booked_till']);
+                    echo $date->format('M j, Y g:i A'); // Display the farthest date and time
             } else {
                 echo 'N/A'; // If no bookings exist
             }
@@ -573,6 +633,10 @@ $result = $mysqli->query($query);
             <form action="update.php" method="GET" style="display:inline;">
                 <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
                 <button type="submit" class="btn btn-edit">Edit</button>
+            </form>
+            <form action="details.php" method="GET" style="display:inline;">
+                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                <button type="submit" class="btn btn-detail">Detail</button>
             </form>
         </td>
     </tr>
