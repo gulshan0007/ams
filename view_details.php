@@ -354,7 +354,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </span>
                         </td> -->
                     <!-- </tr> -->
-                    <tr><th>Availability</th>
+                    <tr><th>Next Availability</th>
     <td>
     <?php
         // Ensure $data['id'] and $data['equipment_dept'] are used correctly

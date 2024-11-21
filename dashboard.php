@@ -623,7 +623,63 @@ $result = $mysqli->query($query);
         background: #ffcdd2;
         color: #c62828;
     }
+    /* Form Dropdown and Input Styles */
+select, 
+input[type="date"],
+input[type="text"][name="mmd_no"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: white;
+    transition: border-color 0.3s ease;
+}
 
+select:focus, 
+input[type="date"]:focus,
+input[type="text"][name="mmd_no"]:focus {
+    border-color: #2a5298;
+    outline: none;
+    box-shadow: 0 0 5px rgba(42, 82, 152, 0.3);
+}
+
+/* Style for dropdown arrow */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position-x: 98%;
+    background-position-y: center;
+    border: 1px solid #dfdfdf;
+    border-radius: 2px;
+    margin-right: 2rem;
+    padding: 0.6rem;
+    padding-right: 2rem;
+    
+}
+
+/* Hover and focus states for dropdowns */
+select:hover, 
+select:focus {
+    border-color: #2a5298;
+    cursor: pointer;
+}
+
+/* Placeholder style */
+select option[value=""] {
+    color: #888;
+}
+
+/* Date input style improvements */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    background-color: #2a5298;
+    padding: 5px;
+    border-radius: 3px;
+    color: white;
+}
     /* Responsive Design */
     @media (max-width: 768px) {
         .header {
@@ -663,7 +719,7 @@ $result = $mysqli->query($query);
             <?php if ($pending_count > 0): ?>
             <span class="pending-count"><?php echo $pending_count; ?></span>
             <?php endif; ?>
-            <span class="pending-text">Pending Bookings</span>
+            <span class="pending-text">Booking Management</span>
         </a>
         <a href="logout.php" class="logout-link">Logout</a>
     </div>
@@ -673,15 +729,15 @@ $result = $mysqli->query($query);
         <table class="equipment-table">
             <tr>
                 <th>ID</th>
-                <th>Equipment Name</th>
-                <th>Department</th>
+                <th>Name</th>
+                <th>Lab</th>
                 <th>Photo</th>
                 <th>Specification</th>
                 <th>Description</th>
                 <!-- <th>Purpose</th>
                 <th>Users</th> -->
                 <!-- <th>Status</th> -->
-                <th>Availability</th>
+                <th>Next Availability</th>
                 <th>Actions</th>
             </tr>
             <?php while ($row = $result->fetch_assoc()): ?>
@@ -760,13 +816,18 @@ $result = $mysqli->query($query);
             <form method="POST" enctype="multipart/form-data">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Equipment Name</label>
+                        <label>Name</label>
                         <input type="text" name="equipment_name" required>
                     </div>
                     <div class="form-group">
-                        <label>Equipment Department</label>
-                        <input type="text" name="equipment_dept" required>
-                    </div>
+    <label>Lab</label>
+    <select name="equipment_dept" required>
+        <option value="">Select Lab</option>
+        <option value="Traffic Lab">Traffic Lab</option>
+        <option value="Hydro Lab">Hydro Lab</option>
+        <option value="Foundation Lab">Foundation Lab</option>
+    </select>
+</div>
                     <div class="form-group">
                         <label>Photo</label>
                         <input type="file" name="photo" accept="image/*">
@@ -800,17 +861,21 @@ $result = $mysqli->query($query);
                         <input type="text" name="last_used_by">
                     </div> -->
                     <div class="form-group">
-                        <label>Year of Purchase</label>
-                        <input type="text" name="year_of_purchase">
-                    </div>
-                    <div class="form-group">
-                        <label>MMD No</label>
-                        <input type="number" name="mmd_no">
-                    </div>
-                    <div class="form-group">
-                        <label>Supplier</label>
-                        <input type="text" name="supplier">
-                    </div>
+    <label>Year of Purchase</label>
+    <input type="date" name="year_of_purchase">
+</div>
+<div class="form-group">
+    <label>MMD No</label>
+    <input type="text" name="mmd_no" pattern="[A-Za-z0-9]+" title="Alphanumeric characters only">
+</div>
+<div class="form-group">
+    <label>Supplier</label>
+    <select name="supplier">
+        <option value="">Select Supplier</option>
+        <option value="Gulshan Kumar Enterprises">Mohit Enterprises</option>
+        <option value="Ram Lal Enterprises">Ram Lal Enterprises</option>
+    </select>
+</div>
                     <div class="form-group">
                         <label>Amount</label>
                         <input type="number" step="0.01" name="amount">
@@ -820,9 +885,13 @@ $result = $mysqli->query($query);
                         <input type="text" name="fund">
                     </div>
                     <div class="form-group">
-                        <label>Incharge</label>
-                        <input type="text" name="incharge">
-                    </div>
+    <label>Incharge</label>
+    <select name="incharge">
+        <option value="">Select Incharge</option>
+        <option value="ram">Prof. Archak Mittal</option>
+        <option value="sita">Prof. Subimal Ghosh</option>
+    </select>
+</div>
                 </div>
                 <button type="submit" name="add" class="btn btn-add">Add Equipment</button>
             </form>

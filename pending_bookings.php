@@ -253,6 +253,7 @@ $approved_result = $stmt->get_result();
             }
         }
     </style>
+   
 </head>
 <body>
     <div class="container">
@@ -338,5 +339,11 @@ $approved_result = $stmt->get_result();
             </table>
         </div>
     </div>
+    <!-- <script>
+        // Refresh the page every 5 seconds
+        setTimeout(function() {
+            location.reload();
+        }, 5000);
+    </script> -->
 </body>
 </html>

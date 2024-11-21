@@ -348,11 +348,33 @@ $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $e
                     <input type="text" id="department" class="input-field" name="department" 
                            value="<?php echo htmlspecialchars($department); ?>" readonly>
                 </div>
+                <?php
+                    // Before the form, add a query to get the next availability
+                    date_default_timezone_set('Asia/Kolkata');
+
+$next_availability_query = "
+SELECT MAX(end_datetime) AS next_available 
+FROM bookings 
+WHERE instrument_id = ? AND department = ?
+";
+$next_stmt = $mysqli->prepare($next_availability_query);
+$next_stmt->bind_param("is", $instrument_id, $department);
+$next_stmt->execute();
+$next_result = $next_stmt->get_result();
+$next_row = $next_result->fetch_assoc();
+
+// Use this in the min attribute and as a JS variable
+$next_available = $next_row['next_available'] 
+? date('Y-m-d\TH:i', strtotime($next_row['next_available'])) 
+: date('Y-m-d\TH:i');
+                ?>
 
                 <div class="form-group">
                     <label for="start_datetime">Start Date & Time:</label>
                     <input type="datetime-local" id="start_datetime" class="datetime-field" 
-                           name="start_datetime" required min="<?php echo date('Y-m-d\TH:i'); ?>">
+       name="start_datetime" required 
+       min="<?php echo $next_available; ?>"
+       value="<?php echo $next_available; ?>">
                     <div class="info-text">Select when you want to start using the instrument</div>
                 </div>
 
@@ -374,5 +396,28 @@ $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $e
             document.getElementById('end_datetime').min = this.value;
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDatetime = document.getElementById('start_datetime');
+        const endDatetime = document.getElementById('end_datetime');
+        
+        // Set initial min for end datetime
+        endDatetime.min = startDatetime.value;
+
+        // Update restrictions when start datetime changes
+        startDatetime.addEventListener('change', function() {
+            endDatetime.min = this.value;
+        });
+
+        // Prevent selecting dates before next availability
+        const nextAvailable = new Date(startDatetime.min);
+        startDatetime.addEventListener('input', function() {
+            const selectedDate = new Date(this.value);
+            if (selectedDate < nextAvailable) {
+                this.value = startDatetime.min;
+            }
+        });
+    });
+</script>
 </body>
 </html>
