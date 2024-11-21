@@ -75,7 +75,7 @@ if ($booking_result->num_rows == 0) {
         end_datetime DATETIME,
         department VARCHAR(255),
         status VARCHAR(20) DEFAULT 'pending', /* Add this line */
-        FOREIGN KEY (instrument_id) REFERENCES $department(id)
+        FOREIGN KEY (instrument_id) REFERENCES $department(id) ON DELETE CASCADE
     )";
     $mysqli->query($create_booking_table);
 }
@@ -308,174 +308,232 @@ $result = $mysqli->query($query);
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Lab Asset Management - Dashboard</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        body {
-            background: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-        }
+    body {
+        background: #f5f7fa;
+        color: #333;
+        line-height: 1.6;
+        padding: 20px;
+    }
 
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-info h2, .header-info h3 {
-            margin: 0;
-        }
-
-        .logout-link {
-            color: white;
-            text-decoration: none;
-            padding: 8px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .logout-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .pending-link {
-    position: relative;
+    .header {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: white;
-    text-decoration: none;
-    padding: 8px 15px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-    transition: all 0.3s ease;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    gap: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    gap: 20px; /* Add some flexible spacing */
 }
 
-.pending-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Space between logo and header info */
 }
 
-.pending-count {
-    background: #ff4757;
-    color: white;
-    border-radius: 12px;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: bold;
-    min-width: 20px;
-    text-align: center;
-    position: absolute;
-    top: -10px;
-    right: -10px;
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Small gap between pending and logout */
 }
 
-.pending-text {
-    font-size: 14px;
-    font-weight: 500;
+.logo-container {
+    display: flex;
+    align-items: center;
 }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+.header-logo {
+    max-height: 80px;
+    width: auto;
+    object-fit: contain;
+}
 
-        /* Table Styles */
-        .equipment-table {
+    .logout-link {
+        color: white;
+        text-decoration: none;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+
+    .logout-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .pending-link {
+        position: relative;
+        color: white;
+        text-decoration: none;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pending-link:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .pending-count {
+        background: #ff4757;
+        color: white;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 12px;
+        font-weight: bold;
+        min-width: 20px;
+        text-align: center;
+        position: absolute;
+        top: -10px;
+        right: -10px;
+    }
+
+    .pending-text {
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Table Styles */
+    .equipment-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .equipment-table th {
+        background: #2a5298;
+        color: white;
+        padding: 15px;
+        text-align: left;
+    }
+
+    .equipment-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .equipment-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .equipment-table img {
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Form Styles */
+    .add-equipment-form {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-title {
+        color: #2a5298;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+        border-color: #2a5298;
+        outline: none;
+    }
+    .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-collapse: collapse;
-            background: white;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Popup container */
+        .popup-container {
+            background-color: white;
             border-radius: 10px;
-            overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-
-        .equipment-table th {
-            background: #2a5298;
-            color: white;
-            padding: 15px;
-            text-align: left;
-        }
-
-        .equipment-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .equipment-table tr:hover {
-            background: #f8f9fa;
-        }
-
-        .equipment-table img {
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Form Styles */
-        .add-equipment-form {
-            background: white;
+            width: 350px;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
         }
 
-        .form-title {
-            color: #2a5298;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
+        /* Popup styling */
+        .popup-title {
+            font-size: 1.2em;
             margin-bottom: 15px;
+            color: #333;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="number"]:focus {
-            border-color: #2a5298;
-            outline: none;
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .btn {
@@ -483,93 +541,133 @@ $result = $mysqli->query($query);
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease;
         }
 
-        .btn-delete {
-            background: #ff4757;
+        .btn-cancel {
+            background-color: #6c757d;
             color: white;
         }
 
-        .btn-delete:hover {
-            background: #ff6b81;
-        }
-
-        .btn-edit {
-            background: green;
+        .btn-confirm {
+            background-color: #dc3545;
             color: white;
         }
 
-        .btn-edit:hover {
-            background: green;
+        .btn:hover {
+            opacity: 0.9;
         }
 
-        .btn-add {
-            background: #2a5298;
-            color: white;
-            padding: 12px 25px;
-            font-size: 16px;
+        /* Animation */
+        @keyframes popupAnimation {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
 
-        .btn-add:hover {
-            background: #1e3c72;
+        .popup-container {
+            animation: popupAnimation 0.3s ease-out;
         }
 
-        /* Status Badge */
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 500;
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-delete {
+        background: #ff4757;
+        color: white;
+    }
+
+    .btn-delete:hover {
+        background: #ff6b81;
+    }
+
+    .btn-edit {
+        background: green;
+        color: white;
+    }
+
+    .btn-edit:hover {
+        background: green;
+    }
+
+    .btn-add {
+        background: #2a5298;
+        color: white;
+        padding: 12px 25px;
+        font-size: 16px;
+    }
+
+    .btn-add:hover {
+        background: #1e3c72;
+    }
+
+    /* Status Badge */
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-available {
+        background: #c8e6c9;
+        color: #2e7d32;
+    }
+
+    .status-unavailable {
+        background: #ffcdd2;
+        color: #c62828;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
         }
 
-        .status-available {
-            background: #c8e6c9;
-            color: #2e7d32;
+        .equipment-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
         }
 
-        .status-unavailable {
-            background: #ffcdd2;
-            color: #c62828;
+        .form-grid {
+            grid-template-columns: 1fr;
         }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-
-            .equipment-table {
-                display: block;
-                overflow-x: auto;
-                white-space: nowrap;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+    }
     </style>
 </head>
+
 <body>
     <div class="container">
-        
-        <div class="header">
-            <div class="header-info">
-                <h2>Welcome, <?php echo $_SESSION['username']; ?></h2>
-                <h3>Department: <?php echo strtoupper($_SESSION['department']); ?></h3>
-            </div>
-            <a href="pending_bookings.php" class="pending-link">
-    <?php if ($pending_count > 0): ?>
-        <span class="pending-count"><?php echo $pending_count; ?></span>
-    <?php endif; ?>
-    <span class="pending-text">Pending Bookings</span>
-</a>
-            <a href="logout.php" class="logout-link">Logout</a>
+
+    <div class="header">
+    <div class="header-left">
+        <div class="logo-container">
+            <img src="images/iitblogo.png" alt="IITB Logo" class="header-logo">
         </div>
+        <div class="header-info">
+            <h2>Welcome <?php echo $_SESSION['username']; ?></h2>
+            <h3>Department: <?php echo strtoupper($_SESSION['department']); ?></h3>
+        </div>
+    </div>
+    <div class="header-right">
+        <a href="pending_bookings.php" class="pending-link">
+            <?php if ($pending_count > 0): ?>
+            <span class="pending-count"><?php echo $pending_count; ?></span>
+            <?php endif; ?>
+            <span class="pending-text">Pending Bookings</span>
+        </a>
+        <a href="logout.php" class="logout-link">Logout</a>
+    </div>
+    </div>
 
         <!-- Equipment List Table -->
         <table class="equipment-table">
@@ -582,33 +680,34 @@ $result = $mysqli->query($query);
                 <th>Description</th>
                 <!-- <th>Purpose</th>
                 <th>Users</th> -->
-                <th>Status</th>
-                <th>Booked Till</th>
+                <!-- <th>Status</th> -->
+                <th>Availability</th>
                 <th>Actions</th>
             </tr>
             <?php while ($row = $result->fetch_assoc()): ?>
-    <tr>
-        <td><?php echo $row['id']; ?></td>
-        <td><?php echo $row['equipment_name']; ?></td>
-        <td><?php echo $row['equipment_dept']; ?></td>
-        <td>
-            <?php if ($row['photo']): ?>
-                <img src="<?php echo $row['photo']; ?>" alt="Equipment Photo" width="100">
-            <?php else: ?>
-                No photo
-            <?php endif; ?>
-        </td>
-        <td><?php echo $row['specification']; ?></td>
-        <td><?php echo $row['description']; ?></td>
-        <!-- <td><?php echo $row['purpose']; ?></td>
+            <tr>
+                <td><?php echo $row['id']; ?></td>
+                <td><?php echo $row['equipment_name']; ?></td>
+                <td><?php echo $row['equipment_dept']; ?></td>
+                <td>
+                    <?php if ($row['photo']): ?>
+                    <img src="<?php echo $row['photo']; ?>" alt="Equipment Photo" width="100">
+                    <?php else: ?>
+                    No photo
+                    <?php endif; ?>
+                </td>
+                <td><?php echo $row['specification']; ?></td>
+                <td><?php echo $row['description']; ?></td>
+                <!-- <td><?php echo $row['purpose']; ?></td>
         <td><?php echo $row['users']; ?></td> -->
-        <td>
-            <span class="status-badge <?php echo strtolower($row['availability']) === 'available' ? 'status-available' : 'status-unavailable'; ?>">
-                <?php echo $row['availability']; ?>
-            </span>
-        </td>
-        <td>
-            <?php
+                <!-- <td>
+                    <span
+                        class="status-badge <?php echo strtolower($row['availability']) === 'available' ? 'status-available' : 'status-unavailable'; ?>">
+                        <?php echo $row['availability']; ?>
+                    </span>
+                </td> -->
+                <td>
+                    <?php
             // Fetch the farthest end_datetime for this instrument from the bookings table
             $booked_query = "SELECT MAX(end_datetime) AS booked_till FROM bookings WHERE instrument_id = ? AND department = ?";
             $booked_stmt = $mysqli->prepare($booked_query);
@@ -621,26 +720,37 @@ $result = $mysqli->query($query);
                 $date = new DateTime($booked_row['booked_till']);
                     echo $date->format('M j, Y g:i A'); // Display the farthest date and time
             } else {
-                echo 'N/A'; // If no bookings exist
+                echo 'Available for Booking'; // If no bookings exist
             }
             ?>
-        </td>
-        <td>
-            <form method="POST" style="display:inline;">
-                <input type="hidden" name="delete_id" value="<?php echo $row['id']; ?>">
-                <button type="submit" class="btn btn-delete">Delete</button>
-            </form>
-            <form action="update.php" method="GET" style="display:inline;">
-                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                <button type="submit" class="btn btn-edit">Edit</button>
-            </form>
-            <form action="details.php" method="GET" style="display:inline;">
-                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                <button type="submit" class="btn btn-detail">Detail</button>
-            </form>
-        </td>
-    </tr>
-<?php endwhile; ?>
+                </td>
+                <td>
+                <!-- <form id="deleteForm" method="POST" style="display:inline;">
+        <input type="hidden" id="deleteIdInput" name="delete_id" value="">
+        <button type="button" class="btn btn-delete" onclick="showDeletePopup(<?php echo $row['id']; ?>)">Delete</button>
+    </form> -->
+
+    <div id="deletePopup" class="popup-overlay">
+        <div class="popup-container">
+            <div class="popup-title">Are you sure?</div>
+            <p>Do you really want to delete this equipment? This action cannot be undone.</p>
+            <div class="popup-buttons">
+                <button class="btn btn-cancel" onclick="hideDeletePopup()">Cancel</button>
+                <button class="btn btn-confirm" onclick="confirmDelete()">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+                    <form action="update.php" method="GET" style="display:inline;">
+                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                        <button type="submit" class="btn btn-edit">Edit</button>
+                    </form>
+                    <form action="details.php" method="GET" style="display:inline;">
+                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                        <button type="submit" class="btn btn-detail">Detail</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endwhile; ?>
 
         </table>
 
@@ -718,5 +828,21 @@ $result = $mysqli->query($query);
             </form>
         </div>
     </div>
+    <script>
+        function showDeletePopup(id) {
+            document.getElementById('deleteIdInput').value = id;
+            document.getElementById('deletePopup').style.display = 'flex';
+        }
+
+        function hideDeletePopup() {
+            document.getElementById('deletePopup').style.display = 'none';
+        }
+
+        function confirmDelete() {
+            // Submit the form programmatically
+            document.getElementById('deleteForm').submit();
+        }
+    </script>
 </body>
+
 </html>

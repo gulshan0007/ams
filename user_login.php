@@ -1,3 +1,35 @@
+<?php
+    session_start();
+    include 'connections.php';
+
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
+
+        $query = "SELECT * FROM userdetails WHERE username = ?";
+        $stmt = $mysqli->prepare($query);
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows == 1) {
+            $user = $result->fetch_assoc();
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['loggedin'] = true;
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['department'] = $user['department'];
+                header("Location: view_details.php");
+                exit();
+            } else {
+                $error_message = "Invalid credentials.";
+            }
+        } else {
+            $error_message = "User not found.";
+        }
+    }
+    ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -150,6 +182,24 @@
             font-size: 14px;
         }
 
+
+         .forgot-password-link {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .forgot-password-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-password-link a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -158,36 +208,7 @@
     </style>
 </head>
 <body>
-    <?php
-    session_start();
-    include 'connections.php';
-
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-
-        $query = "SELECT * FROM userdetails WHERE username = ?";
-        $stmt = $mysqli->prepare($query);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows == 1) {
-            $user = $result->fetch_assoc();
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['loggedin'] = true;
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['department'] = $user['department'];
-                header("Location: view_details.php");
-                exit();
-            } else {
-                $error_message = "Invalid credentials.";
-            }
-        } else {
-            $error_message = "User not found.";
-        }
-    }
-    ?>
+    
 
     <div class="container">
         <div class="header">
@@ -221,6 +242,9 @@
 
         <div class="signup-link">
             Don't have an account? <a href="user_signup.php">Sign up here</a>
+        </div>
+        <div class="forgot-password-link">
+            <a href="forgot_password.php">Forgot Password?</a>
         </div>
     </div>
 </body>

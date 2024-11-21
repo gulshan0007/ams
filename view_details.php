@@ -149,15 +149,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .select-field:focus, .input-field:focus {
-            border-color: #3b82f6;
+            border-color: #2a5298;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             outline: none;
         }
 
         .submit-btn {
-            width: 100%;
+            width: 20%;
             padding: 0.75rem;
-            background: #3b82f6;
+            background: #2a5298;
             color: white;
             border: none;
             border-radius: 8px;
@@ -180,7 +180,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .details-header {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #2a5298 0%, #2563eb 100%);
             color: white;
             padding: 1.5rem 2rem;
         }
@@ -314,8 +314,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 
             </div>
+            <div style="display: flex; justify-content: center; align-items: center; height: 5vh;">
 
                 <button type="submit" class="submit-btn">Search Asset</button>
+            </div>
             </form>
         </div>
 
@@ -345,14 +347,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <tr><th>Description</th><td><?php echo htmlspecialchars($data['description']); ?></td></tr>
                     <tr><th>Purpose</th><td><?php echo htmlspecialchars($data['purpose']); ?></td></tr>
                     <tr><th>Users</th><td><?php echo htmlspecialchars($data['users']); ?></td></tr>
-                    <tr><th>Status</th>
-                        <td>
+                    <!-- <tr><th>Status</th> -->
+                        <!-- <td>
                             <span class="availability-badge <?php echo strtolower($data['availability']) === 'available' ? 'available' : 'unavailable'; ?>">
                                 <?php echo htmlspecialchars($data['availability']); ?>
                             </span>
-                        </td>
-                    </tr>
-                    <tr><th>Booked Till</th>
+                        </td> -->
+                    <!-- </tr> -->
+                    <tr><th>Availability</th>
     <td>
     <?php
         // Ensure $data['id'] and $data['equipment_dept'] are used correctly
@@ -375,7 +377,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $date = new DateTime($booked_row['booked_till']);
                     echo $date->format('M j, Y g:i A');
                 } else {
-                    echo 'N/A'; // If no bookings exist
+                    echo 'Available for Booking'; // If no bookings exist
                 }
             } else {
                 echo 'Error fetching bookings.';
