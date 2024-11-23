@@ -6,6 +6,9 @@ use PHPMailer\PHPMailer\Exception;
 
 require 'vendor/autoload.php';
 
+// Set timezone to Asia/Kolkata
+date_default_timezone_set('Asia/Kolkata');
+
 // Function to send booking status email
 function sendBookingStatusEmail($email, $status, $equipment_name, $start_datetime, $end_datetime) {
     $mail = new PHPMailer(true);
@@ -127,8 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Rest of the code remains the same as in the original script
-// (Fetching pending and approved bookings and rendering the page)
+// Fetch pending bookings
 $pending_query = "SELECT b.*, e.equipment_name, u.username as user_name 
                   FROM bookings b 
                   JOIN `$department` e ON b.instrument_id = e.id 
@@ -241,6 +243,10 @@ $approved_result = $stmt->get_result();
             border-radius: 4px;
             margin-bottom: 15px;
         }
+        .past-booking {
+            color: #666;
+            font-style: italic;
+        }
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -253,7 +259,6 @@ $approved_result = $stmt->get_result();
             }
         }
     </style>
-   
 </head>
 <body>
     <div class="container">
@@ -316,17 +321,25 @@ $approved_result = $stmt->get_result();
                 </thead>
                 <tbody>
                     <?php if ($approved_result->num_rows > 0): ?>
-                        <?php while ($booking = $approved_result->fetch_assoc()): ?>
-                            <tr>
+                        <?php while ($booking = $approved_result->fetch_assoc()): 
+                            $current_time = new DateTime();
+                            $end_time = new DateTime($booking['end_datetime']);
+                            $is_past_booking = $end_time < $current_time;
+                        ?>
+                            <tr class="<?php echo $is_past_booking ? 'past-booking' : ''; ?>">
                                 <td><?php echo htmlspecialchars($booking['equipment_name']); ?></td>
                                 <td><?php echo htmlspecialchars($booking['username']); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['start_datetime'])); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['end_datetime'])); ?></td>
                                 <td>
+                                    <?php if (!$is_past_booking): ?>
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
                                         <button type="submit" name="action" value="reject" class="btn btn-reject">Reject</button>
                                     </form>
+                                    <?php else: ?>
+                                        <span class="past-booking">Booking completed</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endwhile; ?>
@@ -339,11 +352,5 @@ $approved_result = $stmt->get_result();
             </table>
         </div>
     </div>
-    <!-- <script>
-        // Refresh the page every 5 seconds
-        setTimeout(function() {
-            location.reload();
-        }, 5000);
-    </script> -->
 </body>
 </html>
