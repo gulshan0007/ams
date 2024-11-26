@@ -172,6 +172,67 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             transform: translateY(-2px);
         }
 
+        .search-container {
+        position: relative;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f8fafc;
+    }
+
+    .search-input:focus {
+        border-color: #2a5298;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        z-index: 10;
+        display: none;
+    }
+
+    .search-dropdown.active {
+        display: block;
+    }
+
+    .search-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .search-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .search-item .item-id {
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+
+    .search-item .item-name {
+        color: #718096;
+    }
+
         .details-container {
             background: white;
             border-radius: 16px;
@@ -269,6 +330,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <div class="form-container">
+
+        <div class="search-container">
+    <input type="text" id="global-search" class="search-input" placeholder="Search by ID or Name...">
+    <div class="search-dropdown"></div>
+</div>
         <form method="POST" action="view_details.php">
                 <div class="form-group">
                     <label for="equipment_dept">Equipment Department:</label>
@@ -426,6 +492,86 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             });
         });
     </script>
+    <script>
+$(document).ready(function() {
+    const searchInput = $('#global-search');
+    const searchDropdown = $('.search-dropdown');
+    let allInstruments = [];
+
+    // Fetch all instruments from all departments
+    function fetchAllInstruments() {
+        $.ajax({
+            url: 'fetch_all_instruments.php',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                allInstruments = response;
+            }
+        });
+    }
+
+    // Filter and display instruments
+    function filterInstruments(query) {
+        const filteredInstruments = allInstruments.filter(instrument => 
+            instrument.id.toString().includes(query) || 
+            instrument.equipment_name.toLowerCase().includes(query.toLowerCase())
+        );
+
+        const dropdownContent = filteredInstruments.map(instrument => 
+            `<div class="search-item" data-id="${instrument.id}" data-dept="${instrument.equipment_dept}">
+                <span class="item-id">${instrument.id}</span>
+                <span class="item-name">${instrument.equipment_name}</span>
+                <span class="item-dept">(${instrument.equipment_dept})</span>
+            </div>`
+        ).join('');
+
+        searchDropdown.html(dropdownContent);
+        searchDropdown.toggleClass('active', filteredInstruments.length > 0);
+    }
+
+    // Search input event
+    searchInput.on('input', function() {
+        const query = $(this).val();
+        if (query.length >= 2) {
+            filterInstruments(query);
+        } else {
+            searchDropdown.removeClass('active');
+        }
+    });
+
+    // Select instrument from dropdown
+    $(document).on('click', '.search-item', function() {
+        const id = $(this).data('id');
+        const dept = $(this).data('dept');
+        
+        // Set department and ID in the form
+        $('#equipment_dept').val(dept);
+        
+        // Trigger department change to populate asset IDs
+        $('#equipment_dept').trigger('change');
+        
+        // Wait for the asset ID dropdown to populate, then select the right option
+        setTimeout(() => {
+            $('#id').val(id);
+            searchInput.val('');
+            searchDropdown.removeClass('active');
+            
+            // Optionally, submit the form
+            $('form').submit();
+        }, 300);
+    });
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.search-container').length) {
+            searchDropdown.removeClass('active');
+        }
+    });
+
+    // Initial fetch of all instruments
+    fetchAllInstruments();
+});
+</script>
 </body>
 </html>
 
