@@ -36,7 +36,7 @@ function sendOTPEmail($email, $otp) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
-        $mail->setFrom('gulshan.iitb@gmail.com', 'Lab Assets Registration');
+        $mail->setFrom('gulshankumar060102@gmail.com', 'Lab Assets Registration');
         $mail->addAddress($email);
         $mail->isHTML(true);
         $mail->Subject = 'Your OTP for Lab Assets Registration';
@@ -56,6 +56,7 @@ $error_message = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_SESSION['otp_verified'])) {
     // Use isset() to prevent undefined index warnings
     $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+    $name = isset($_POST['name']) ? trim($_POST['name']) : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
     $department = isset($_POST['department']) ? trim($_POST['department']) : '';
 
@@ -70,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && !isset($_SESSION['otp_verified'])) {
         
         // Store registration details in session
         $_SESSION['reg_username'] = $username;
+        $_SESSION['reg_name'] = $name;
         $_SESSION['reg_email'] = $email;
         $_SESSION['reg_password'] = password_hash($password, PASSWORD_DEFAULT);
         $_SESSION['reg_department'] = $department;
@@ -93,14 +95,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['otp_sent']) && !iss
     } elseif ($user_otp == $_SESSION['generated_otp']) {
         // OTP Verified - Complete Registration
         $username = $_SESSION['reg_username'];
+        $name = $_SESSION['reg_name'];
         $email = $_SESSION['reg_email'];
         $hashedPassword = $_SESSION['reg_password'];
         $department = $_SESSION['reg_department'];
 
         // Insert user data into userdetails
-        $query = "INSERT INTO userdetails (username, password, department) VALUES (?, ?, ?)";
+        $query = "INSERT INTO userdetails (username, name, password, department) VALUES (?, ?, ?, ?)";
         $stmt = $mysqli->prepare($query);
-        $stmt->bind_param("sss", $username, $hashedPassword, $department);
+        $stmt->bind_param("ssss", $username, $name, $hashedPassword, $department);
 
         if ($stmt->execute()) {
             // Clear session data
@@ -304,6 +307,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['otp_sent']) && !iss
 
         <form method="POST">
             <?php if (!isset($_SESSION['otp_sent'])): ?>
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
                 <div class="form-group">
                     <label for="username">Username (without @iitb.ac.in)</label>
                     <input type="text" id="username" name="username" required>

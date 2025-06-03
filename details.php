@@ -390,7 +390,7 @@ $booking_result = $booking_stmt->get_result();
             </div>
 
             <div class="detail-item">
-                <h3>Users</h3>
+                <h3>Contact Email</h3>
                 <div class="detail-value description-box"><?php echo nl2br(htmlspecialchars($equipment['users'])); ?></div>
             </div>
 

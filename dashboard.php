@@ -844,10 +844,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                         <label>Purpose</label>
                         <input type="text" name="purpose">
                     </div>
-                    <div class="form-group">
-                        <label>Users</label>
-                        <input type="text" name="users">
-                    </div>
+                    
                     <!-- <div class="form-group">
                         <label>Availability</label>
                         <input type="text" name="availability">
@@ -892,6 +889,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="sita">Prof. Subimal Ghosh</option>
     </select>
 </div>
+<div class="form-group">
+                        <label>Contact Email</label>
+                        <input type="text" name="users">
+                    </div>
                 </div>
                 <button type="submit" name="add" class="btn btn-add">Add Equipment</button>
             </form>

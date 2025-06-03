@@ -14,6 +14,16 @@ $department = $_GET['department'] ?? '';
 $username = $_SESSION['username'];
 $current_time = date("Y-m-d H:i:s");
 
+
+
+$user_query = "SELECT name FROM userdetails WHERE username = ?";
+$user_stmt = $mysqli->prepare($user_query);
+$user_stmt->bind_param("s", $username);
+$user_stmt->execute();
+$user_result = $user_stmt->get_result();
+$user_row = $user_result->fetch_assoc();
+$name = $user_row['name'];
+
 // Check and update availability based on end_datetime
 $update_availability_query = "
     UPDATE `$department` i
@@ -79,6 +89,7 @@ $update_status_stmt->execute();
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $start_datetime = $_POST['start_datetime'];
     $end_datetime = $_POST['end_datetime'];
+    $purpose = $_POST['purpose']; 
 
     // Validate datetime
     if (strtotime($end_datetime) <= strtotime($start_datetime)) {
@@ -122,10 +133,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // $insert_stmt = $mysqli->prepare($insert_query);
         // $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $end_datetime, $department);
         // In book_instrument.php, modify the booking insertion query
-$insert_query = "INSERT INTO bookings (instrument_id, username, start_datetime, end_datetime, department, status) 
-VALUES (?, ?, ?, ?, ?, 'pending')";
+$insert_query = "INSERT INTO bookings (instrument_id, username, name, start_datetime, end_datetime, department, status, purpose) 
+VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)";
 $insert_stmt = $mysqli->prepare($insert_query);
-$insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $end_datetime, $department);
+$insert_stmt->bind_param("issssss", $instrument_id, $username, $name, $start_datetime, $end_datetime, $department, $purpose);
         $insert_stmt->execute();
 
         // Update instrument status if booking starts immediately
@@ -164,166 +175,186 @@ $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $e
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Instrument - Lab Asset Management</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
 
+    body {
+        background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
+        min-height: 100vh;
+        padding: 2rem;
+        color: #1a202c;
+        display: flex;
+        justify-content: center;
+        align-items: start;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .navbar {
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .nav-brand {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    h2 {
+        color: #1a202c;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .booking-form {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f8fafc;
+    }
+
+    .input-field:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .input-field:disabled,
+    .input-field[readonly] {
+        background-color: #f1f5f9;
+        cursor: not-allowed;
+        color: #64748b;
+    }
+
+    .datetime-field {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        background: #f8fafc;
+        color: #1a202c;
+    }
+
+    .datetime-field:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 0.75rem;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 1rem;
+    }
+
+    .submit-btn:hover {
+        background: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .info-text {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    textarea.input-field {
+        resize: vertical;
+        min-height: 100px;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 640px) {
         body {
-            background: linear-gradient(135deg, #f6f9fc 0%, #edf2f7 100%);
-            min-height: 100vh;
-            padding: 2rem;
-            color: #1a202c;
-            display: flex;
-            justify-content: center;
-            align-items: start;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .navbar {
-            background: white;
             padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-brand {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        h2 {
-            color: #1a202c;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
         }
 
         .booking-form {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #4a5568;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-            background: #f8fafc;
-        }
-
-        .input-field:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            outline: none;
-        }
-
-        .input-field:disabled, .input-field[readonly] {
-            background-color: #f1f5f9;
-            cursor: not-allowed;
-            color: #64748b;
-        }
-
-        .datetime-field {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-            background: #f8fafc;
-            color: #1a202c;
-        }
-
-        .datetime-field:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            outline: none;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 1rem;
-        }
-
-        .submit-btn:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-        }
-
-        .info-text {
-            font-size: 0.875rem;
-            color: #64748b;
-            margin-top: 0.25rem;
-        }
-
-        @media (max-width: 640px) {
-            body {
-                padding: 1rem;
-            }
-
-            .booking-form {
-                padding: 1.5rem;
-            }
-
-            .form-group {
-                margin-bottom: 1rem;
-            }
-        }
+    }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <nav class="navbar">
-            <div class="nav-brand">Lab Asset Management</div>
-        </nav>
+    <nav class="navbar">
+    <div class="nav-brand">Lab Asset Management</div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <a href="view_details.php" class="btn btn-back" style="
+            background-color: #2a5298; 
+            color: white; 
+            text-decoration: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            font-size: 0.9rem;
+        ">← Go Back</a>
+        
+    </div>
+</nav>
 
         <div class="header">
             <h2>Book Instrument</h2>
@@ -333,20 +364,26 @@ $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $e
             <form method="POST">
                 <div class="form-group">
                     <label for="username">Username:</label>
-                    <input type="text" id="username" class="input-field" name="username" 
-                           value="<?php echo htmlspecialchars($username); ?>" readonly>
+                    <input type="text" id="username" class="input-field" name="username"
+                        value="<?php echo htmlspecialchars($username); ?>" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="instrument_id">Instrument ID:</label>
-                    <input type="text" id="instrument_id" class="input-field" name="instrument_id" 
-                           value="<?php echo htmlspecialchars($instrument_id); ?>" readonly>
+                    <input type="text" id="instrument_id" class="input-field" name="instrument_id"
+                        value="<?php echo htmlspecialchars($instrument_id); ?>" readonly>
                 </div>
 
                 <div class="form-group">
                     <label for="department">Department:</label>
-                    <input type="text" id="department" class="input-field" name="department" 
-                           value="<?php echo htmlspecialchars($department); ?>" readonly>
+                    <input type="text" id="department" class="input-field" name="department"
+                        value="<?php echo htmlspecialchars($department); ?>" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Full Name:</label>
+                    <input type="text" id="name" class="input-field" name="name"
+                        value="<?php echo htmlspecialchars($name); ?>" readonly>
                 </div>
                 <?php
                     // Before the form, add a query to get the next availability
@@ -371,19 +408,24 @@ $next_available = $next_row['next_available']
 
                 <div class="form-group">
                     <label for="start_datetime">Start Date & Time:</label>
-                    <input type="datetime-local" id="start_datetime" class="datetime-field" 
-       name="start_datetime" required 
-       min="<?php echo $next_available; ?>"
-       value="<?php echo $next_available; ?>">
+                    <input type="datetime-local" id="start_datetime" class="datetime-field" name="start_datetime"
+                        required min="<?php echo $next_available; ?>" value="<?php echo $next_available; ?>">
                     <div class="info-text">Select when you want to start using the instrument</div>
                 </div>
 
                 <div class="form-group">
                     <label for="end_datetime">End Date & Time:</label>
-                    <input type="datetime-local" id="end_datetime" class="datetime-field" 
-                           name="end_datetime" required min="<?php echo date('Y-m-d\TH:i'); ?>">
+                    <input type="datetime-local" id="end_datetime" class="datetime-field" name="end_datetime" required
+                        min="<?php echo date('Y-m-d\TH:i'); ?>">
                     <div class="info-text">Select when you plan to finish using the instrument</div>
                 </div>
+
+                <div class="form-group">
+    <label for="purpose">Purpose of Booking:</label>
+    <textarea id="purpose" class="input-field" name="purpose" rows="3" required 
+              placeholder="Briefly describe why you need this instrument"></textarea>
+    <div class="info-text">Explain the research, experiment, or task you'll be using the instrument for</div>
+</div>
 
                 <button type="submit" class="submit-btn">Confirm Booking</button>
             </form>
@@ -391,16 +433,16 @@ $next_available = $next_row['next_available']
     </div>
 
     <script>
-        // Set minimum datetime for end_datetime based on start_datetime
-        document.getElementById('start_datetime').addEventListener('change', function() {
-            document.getElementById('end_datetime').min = this.value;
-        });
+    // Set minimum datetime for end_datetime based on start_datetime
+    document.getElementById('start_datetime').addEventListener('change', function() {
+        document.getElementById('end_datetime').min = this.value;
+    });
     </script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const startDatetime = document.getElementById('start_datetime');
         const endDatetime = document.getElementById('end_datetime');
-        
+
         // Set initial min for end datetime
         endDatetime.min = startDatetime.value;
 
@@ -418,6 +460,7 @@ $next_available = $next_row['next_available']
             }
         });
     });
-</script>
+    </script>
 </body>
+
 </html>

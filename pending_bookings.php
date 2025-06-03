@@ -107,9 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 echo "<script>alert('Error updating booking status.');</script>";
             }
         } elseif ($action == 'reject') {
-            // Delete the rejected booking
-            $delete_query = "DELETE FROM bookings WHERE id = ? AND department = ?";
-            $stmt = $mysqli->prepare($delete_query);
+            // Update booking status to rejected instead of deleting
+            $update_query = "UPDATE bookings SET status = 'rejected' WHERE id = ? AND department = ?";
+            $stmt = $mysqli->prepare($update_query);
             $stmt->bind_param("is", $booking_id, $department);
             
             if ($stmt->execute()) {
@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $booking['end_datetime']
                 );
                 
-                echo "<script>alert('Booking Rejected and Removed!');</script>";
+                echo "<script>alert('Booking Rejected!');</script>";
             } else {
                 echo "<script>alert('Error rejecting booking.');</script>";
             }
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Fetch pending bookings
-$pending_query = "SELECT b.*, e.equipment_name, u.username as user_name 
+$pending_query = "SELECT b.*, e.equipment_name, u.username AS user_name, b.name AS user_full_name 
                   FROM bookings b 
                   JOIN `$department` e ON b.instrument_id = e.id 
                   LEFT JOIN users u ON b.username = u.username
@@ -144,7 +144,7 @@ $stmt->execute();
 $pending_result = $stmt->get_result();
 
 // Fetch previously approved bookings
-$approved_query = "SELECT b.*, e.equipment_name, u.username as user_name 
+$approved_query = "SELECT b.*, e.equipment_name, u.username as user_name, b.name AS user_full_name 
                    FROM bookings b 
                    JOIN `$department` e ON b.instrument_id = e.id 
                    LEFT JOIN users u ON b.username = u.username
@@ -155,6 +155,19 @@ $stmt = $mysqli->prepare($approved_query);
 $stmt->bind_param("s", $department);
 $stmt->execute();
 $approved_result = $stmt->get_result();
+
+// Fetch rejected bookings
+$rejected_query = "SELECT b.*, e.equipment_name, u.username as user_name, b.name AS user_full_name 
+                   FROM bookings b 
+                   JOIN `$department` e ON b.instrument_id = e.id 
+                   LEFT JOIN users u ON b.username = u.username
+                   WHERE b.department = ? AND b.status = 'rejected' 
+                   ORDER BY b.start_datetime DESC";
+
+$stmt = $mysqli->prepare($rejected_query);
+$stmt->bind_param("s", $department);
+$stmt->execute();
+$rejected_result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -162,7 +175,7 @@ $approved_result = $stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pending Bookings - Lab Asset Management</title>
+    <title>Booking Management - Lab Asset Management</title>
     <style>
         .container { 
             max-width: 1200px; 
@@ -247,6 +260,31 @@ $approved_result = $stmt->get_result();
             color: #666;
             font-style: italic;
         }
+        .rejected-booking {
+            background-color: #fff2f2;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #f1f1f1;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-button.active {
+            background-color: #2a5298;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -267,14 +305,21 @@ $approved_result = $stmt->get_result();
             <a href="dashboard.php" class="btn btn-back">Back to Dashboard</a>
         </div>
 
-        <!-- Pending Bookings Section -->
-        <div class="bookings-section">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="openTab(event, 'pending')">Pending Bookings</button>
+            <button class="tab-button" onclick="openTab(event, 'approved')">Approved Bookings</button>
+            <button class="tab-button" onclick="openTab(event, 'rejected')">Rejected Bookings</button>
+        </div>
+
+        <!-- Pending Bookings Tab -->
+        <div id="pending" class="tab-content active">
             <div class="section-header">Pending Bookings</div>
             <table class="booking-table">
                 <thead>
                     <tr>
                         <th>Equipment</th>
                         <th>Requested By</th>
+                        <th>Purpose</th>
                         <th>Start Time</th>
                         <th>End Time</th>
                         <th>Actions</th>
@@ -285,7 +330,8 @@ $approved_result = $stmt->get_result();
                         <?php while ($booking = $pending_result->fetch_assoc()): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($booking['equipment_name']); ?></td>
-                                <td><?php echo htmlspecialchars($booking['username']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['user_full_name']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['purpose'] ?? 'No purpose provided'); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['start_datetime'])); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['end_datetime'])); ?></td>
                                 <td>
@@ -299,21 +345,22 @@ $approved_result = $stmt->get_result();
                         <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="no-bookings">No pending bookings available</td>
+                            <td colspan="6" class="no-bookings">No pending bookings available</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
-        <!-- Approved Bookings Section -->
-        <div class="bookings-section">
+        <!-- Approved Bookings Tab -->
+        <div id="approved" class="tab-content">
             <div class="section-header">Approved Bookings</div>
             <table class="booking-table">
                 <thead>
                     <tr>
                         <th>Equipment</th>
                         <th>Booked By</th>
+                        <th>Purpose</th>
                         <th>Start Time</th>
                         <th>End Time</th>
                         <th>Actions</th>
@@ -328,7 +375,8 @@ $approved_result = $stmt->get_result();
                         ?>
                             <tr class="<?php echo $is_past_booking ? 'past-booking' : ''; ?>">
                                 <td><?php echo htmlspecialchars($booking['equipment_name']); ?></td>
-                                <td><?php echo htmlspecialchars($booking['username']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['user_full_name']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['purpose'] ?? 'No purpose provided'); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['start_datetime'])); ?></td>
                                 <td><?php echo date('M j, Y g:i A', strtotime($booking['end_datetime'])); ?></td>
                                 <td>
@@ -345,12 +393,80 @@ $approved_result = $stmt->get_result();
                         <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="no-bookings">No approved bookings available</td>
+                            <td colspan="6" class="no-bookings">No approved bookings available</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Rejected Bookings Tab -->
+        <div id="rejected" class="tab-content">
+            <div class="section-header">Rejected Bookings</div>
+            <table class="booking-table">
+                <thead>
+                    <tr>
+                        <th>Equipment</th>
+                        <th>Requested By</th>
+                        <th>Purpose</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($rejected_result->num_rows > 0): ?>
+                        <?php while ($booking = $rejected_result->fetch_assoc()): 
+                            $current_time = new DateTime();
+                            $end_time = new DateTime($booking['end_datetime']);
+                            $is_past_booking = $end_time < $current_time;
+                        ?>
+                            <tr class="rejected-booking <?php echo $is_past_booking ? 'past-booking' : ''; ?>">
+                                <td><?php echo htmlspecialchars($booking['equipment_name']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['user_full_name']); ?></td>
+                                <td><?php echo htmlspecialchars($booking['purpose'] ?? 'No purpose provided'); ?></td>
+                                <td><?php echo date('M j, Y g:i A', strtotime($booking['start_datetime'])); ?></td>
+                                <td><?php echo date('M j, Y g:i A', strtotime($booking['end_datetime'])); ?></td>
+                                <td>
+                                    <?php if (!$is_past_booking): ?>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                        <button type="submit" name="action" value="approve" class="btn btn-approve">Approve Again</button>
+                                    </form>
+                                    <?php else: ?>
+                                        <span class="past-booking">Time elapsed</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="6" class="no-bookings">No rejected bookings available</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Remove active class from all tab buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            // Show the selected tab content and add active class to the button
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
 </body>
 </html>

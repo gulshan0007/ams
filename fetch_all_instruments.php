@@ -24,3 +24,6 @@ foreach ($departments as $department) {
 header('Content-Type: application/json');
 echo json_encode($allInstruments);
 ?>
+
+
+
