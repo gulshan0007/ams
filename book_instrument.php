@@ -128,15 +128,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mysqli->begin_transaction();
     try {
         // Insert new booking
-        // $insert_query = "INSERT INTO bookings (instrument_id, username, start_datetime, end_datetime, department) 
-        //                 VALUES (?, ?, ?, ?, ?)";
-        // $insert_stmt = $mysqli->prepare($insert_query);
-        // $insert_stmt->bind_param("issss", $instrument_id, $username, $start_datetime, $end_datetime, $department);
-        // In book_instrument.php, modify the booking insertion query
-$insert_query = "INSERT INTO bookings (instrument_id, username, name, start_datetime, end_datetime, department, status, purpose) 
-VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)";
-$insert_stmt = $mysqli->prepare($insert_query);
-$insert_stmt->bind_param("issssss", $instrument_id, $username, $name, $start_datetime, $end_datetime, $department, $purpose);
+        $insert_query = "INSERT INTO bookings (instrument_id, username, start_datetime, end_datetime, department, status, purpose) 
+                        VALUES (?, ?, ?, ?, ?, 'pending', ?)";
+        $insert_stmt = $mysqli->prepare($insert_query);
+        $insert_stmt->bind_param("isssss", $instrument_id, $username, $start_datetime, $end_datetime, $department, $purpose);
         $insert_stmt->execute();
 
         // Update instrument status if booking starts immediately

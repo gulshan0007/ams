@@ -1,8 +1,8 @@
 <?php
-$host = "10.198.49.5";
+$host = "localhost";
 $dbname = "ugacademics_lab_assets";
-$username = "ugacademics";
-$password = "zsVgOLEGSxewJbgk";
+$username = "root";
+$password = "";
 
 // Create a new MySQLi connection
 $mysqli = new mysqli($host, $username, $password, $dbname);

@@ -131,10 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Fetch pending bookings
-$pending_query = "SELECT b.*, e.equipment_name, u.username AS user_name, b.name AS user_full_name 
+$pending_query = "SELECT b.*, e.equipment_name, u.username AS user_name, ud.name AS user_full_name 
                   FROM bookings b 
                   JOIN `$department` e ON b.instrument_id = e.id 
                   LEFT JOIN users u ON b.username = u.username
+                  LEFT JOIN userdetails ud ON b.username = ud.username
                   WHERE b.department = ? AND b.status = 'pending' 
                   ORDER BY b.start_datetime ASC";
 
@@ -144,10 +145,11 @@ $stmt->execute();
 $pending_result = $stmt->get_result();
 
 // Fetch previously approved bookings
-$approved_query = "SELECT b.*, e.equipment_name, u.username as user_name, b.name AS user_full_name 
+$approved_query = "SELECT b.*, e.equipment_name, u.username as user_name, ud.name AS user_full_name 
                    FROM bookings b 
                    JOIN `$department` e ON b.instrument_id = e.id 
                    LEFT JOIN users u ON b.username = u.username
+                   LEFT JOIN userdetails ud ON b.username = ud.username
                    WHERE b.department = ? AND b.status = 'approved' 
                    ORDER BY b.start_datetime DESC";
 
@@ -157,10 +159,11 @@ $stmt->execute();
 $approved_result = $stmt->get_result();
 
 // Fetch rejected bookings
-$rejected_query = "SELECT b.*, e.equipment_name, u.username as user_name, b.name AS user_full_name 
+$rejected_query = "SELECT b.*, e.equipment_name, u.username as user_name, ud.name AS user_full_name 
                    FROM bookings b 
                    JOIN `$department` e ON b.instrument_id = e.id 
                    LEFT JOIN users u ON b.username = u.username
+                   LEFT JOIN userdetails ud ON b.username = ud.username
                    WHERE b.department = ? AND b.status = 'rejected' 
                    ORDER BY b.start_datetime DESC";
 
