@@ -1,4 +1,4 @@
--- Insert sample admin user for testing
+4-- Insert sample admin user for testing
 INSERT INTO users (username, password, department) VALUES 
 ('admin', 'admin123', 'civil'),
 ('admin_mech', 'admin123', 'mechanical'),
