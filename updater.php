@@ -1,13 +1,6 @@
 <?php
-
-// =================================================================================================
-// 1. ENVIRONMENT SETUP & CONNECTION
-// =================================================================================================
-
-// Ensure your connections.php file exists and correctly establishes the $mysqli connection
 include 'connections.php'; 
 
-// Check if the connection was successful (using the object initialized by connections.php)
 if (!isset($mysqli) || $mysqli->connect_error) {
     die("Database connection failed. Please check 'connections.php'. Error: " . ($mysqli->connect_error ?? "Connection object missing."));
 }
@@ -15,12 +8,7 @@ if (!isset($mysqli) || $mysqli->connect_error) {
 $department = "civil"; 
 $upload_dir = 'uploads/'; 
 
-// =================================================================================================
-// 2. DATA STRUCTURE: Complete Array of 23 Equipment Records
-// =================================================================================================
-
 $equipment_data = [
-    // --- Records 1-10 (MMD 12349 to 12358) ---
     [ 'equipment_name' => 'Binocular Microscope', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Microscope_10282.jpg', 'specification' => 'Model No. 10282, Max Rockwell Correction II', 'description' => 'Microscope for material science analysis.', 'purpose' => 'Material analysis and research.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => 'Unknown', 'mmd_no' => 12349, 'supplier' => 'Sushruta Instruments, I.M.A.N', 'amount' => 21000.00, 'fund' => 'Departmental Fund', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Software - IT/OS Class License', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'ITOS_Software.png', 'specification' => 'IT/OS Class License, CD 33', 'description' => 'Operating system/IT software license for classroom use.', 'purpose' => 'Computer lab teaching and projects.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => 'Unknown', 'mmd_no' => 12350, 'supplier' => 'M/S. Citilabs', 'amount' => 200000.00, 'fund' => 'IT Infrastructure Grant', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Leica Disto D510 Handheld Laser Meter', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Leica_Disto.jpeg', 'specification' => 'Disto D510 Model, Handheld', 'description' => 'Digital laser distance measuring device.', 'purpose' => 'Surveying and site measurement.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => 'Unknown', 'mmd_no' => 12351, 'supplier' => 'Indus Industrial, Chennai', 'amount' => 55022.00, 'fund' => 'Lab Modernization Fund', 'incharge' => 'Civil Dept. Faculty', ],
@@ -31,7 +19,6 @@ $equipment_data = [
     [ 'equipment_name' => 'Driver Vision Scanner Head Unit', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Scanner_Head_Unit.jpg', 'specification' => 'S/N: E092/03', 'description' => 'A head unit component for the driver vision scanner.', 'purpose' => 'Traffic and Transportation Engineering Lab.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2012', 'mmd_no' => 12356, 'supplier' => 'Warwick Evans Optical Co. Ltd.', 'amount' => 196340.00, 'fund' => 'Research Project Fund', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Driving Simulator', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Driving_Simulator.jpeg', 'specification' => '1 Unit, S/N: E01/03', 'description' => 'Full-scale driving simulator for research and testing.', 'purpose' => 'Transportation safety research and human factors study.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2015', 'mmd_no' => 12357, 'supplier' => 'Visioite Simulation & Training Pvt. Ltd.', 'amount' => 352000.00, 'fund' => 'Project Grant', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Captain Civil Missile 1 Unit', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Missile_Unit.jpg', 'specification' => 'S/N: 3392', 'description' => 'Likely a specialized unit for civil engineering/surveying (e.g., a data logger or sensor).', 'purpose' => 'Civil surveying and data acquisition.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => 'Unknown', 'mmd_no' => 12358, 'supplier' => 'M/S Global Trading Exporter', 'amount' => 5650.00, 'fund' => 'Departmental Fund', 'incharge' => 'Civil Dept. Faculty', ],
-    // --- Records 11-23 (MMD 12359 to 12371) ---
     [ 'equipment_name' => 'Mimo Table 18', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Mimo_Table.jpeg', 'specification' => 'Mimo Table 18, Order No. 0002014', 'description' => 'Specialized table or stand for lab equipment.', 'purpose' => 'Lab setup and equipment support.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2015', 'mmd_no' => 12359, 'supplier' => 'ATS Sales International, New Delhi', 'amount' => 122400.00, 'fund' => 'Departmental Fund', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Wohan VBox-20Hz GPS Data Logger', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Wohan_VBox.jpeg', 'specification' => 'VBox-20Hz, 1 No., S/N: 688393', 'description' => 'GPS data logging system for traffic/vehicle dynamics studies.', 'purpose' => 'Traffic Engineering/Vehicle Dynamics Research.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2016', 'mmd_no' => 12360, 'supplier' => 'M/S Racelogic Ltd., Musafganj', 'amount' => 0.00, 'fund' => 'Research Project Fund', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'Traffic Conflict Video Speed Recording System', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Traffic_Video.jpeg', 'specification' => 'Mercury Digital Camera with tripod, lens, storage.', 'description' => 'High-speed video system for capturing and analyzing traffic conflicts.', 'purpose' => 'Traffic safety research.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2012', 'mmd_no' => 12361, 'supplier' => 'Turbo Consulting (India) Pvt. Ltd.', 'amount' => 287520.00, 'fund' => 'Project Fund', 'incharge' => 'Civil Dept. Faculty', ],
@@ -46,11 +33,7 @@ $equipment_data = [
     [ 'equipment_name' => '32 Channel Wearable EEG', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'Wearable_EEG.jpeg', 'specification' => '32 Channel Wearable EEG, 1.00 Unit, with 3-pin Cap Starter.', 'description' => 'Portable Electroencephalogram system for brain activity measurement in field settings.', 'purpose' => 'Driver behavior and cognitive load studies (Human Factors research).', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => 'Unknown', 'mmd_no' => 12370, 'supplier' => 'GEMTECH Marketing & Distribution Pvt. Ltd.', 'amount' => 355000.00, 'fund' => 'Project Grant', 'incharge' => 'Civil Dept. Faculty', ],
     [ 'equipment_name' => 'V-Pads with peripherals', 'equipment_dept' => 'civil', 'photo_path' => $upload_dir . 'V-Pads_Peripheral.jpeg', 'specification' => 'V-Pads with necessary peripherals (Assuming related to Vicon system).', 'description' => 'Data collection pads/tablets for Vicon system (Placeholder based on related items).', 'purpose' => 'Data acquisition accessory for Vicon system.', 'users' => 'Researcher, Students, Faculty', 'year_of_purchase' => '2016', 'mmd_no' => 12371, 'supplier' => 'Vinitrans Mobility Solutions', 'amount' => 50000.00, 'fund' => 'Research Project Fund', 'incharge' => 'Civil Dept. Faculty', ],
 ];
-
-// =================================================================================================
-// 3. BULK INSERTION LOGIC
-// =================================================================================================
-
+ 
 $query = "INSERT INTO $department 
     (equipment_name, equipment_dept, photo, specification, description, purpose, users, 
     availability, currently_used_by, last_used_by,
